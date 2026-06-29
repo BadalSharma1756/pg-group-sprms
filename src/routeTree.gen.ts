@@ -19,12 +19,14 @@ import { Route as AuthenticatedProductionRouteImport } from './routes/_authentic
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated.inventory'
 import { Route as AuthenticatedGapVerificationRouteImport } from './routes/_authenticated.gap-verification'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated.audit'
 import { Route as AuthenticatedMastersSuppliersRouteImport } from './routes/_authenticated.masters.suppliers'
 import { Route as AuthenticatedMastersProductsRouteImport } from './routes/_authenticated.masters.products'
 import { Route as AuthenticatedMastersPlantsRouteImport } from './routes/_authenticated.masters.plants'
 import { Route as AuthenticatedMastersPipeSizesRouteImport } from './routes/_authenticated.masters.pipe-sizes'
 import { Route as AuthenticatedMastersMaterialsRouteImport } from './routes/_authenticated.masters.materials'
 import { Route as AuthenticatedMastersDepartmentsRouteImport } from './routes/_authenticated.masters.departments'
+import { Route as AuthenticatedAuditPlantIdRouteImport } from './routes/_authenticated.audit.$plantId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -76,6 +78,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedMastersSuppliersRoute =
   AuthenticatedMastersSuppliersRouteImport.update({
     id: '/masters/suppliers',
@@ -112,10 +119,17 @@ const AuthenticatedMastersDepartmentsRoute =
     path: '/masters/departments',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAuditPlantIdRoute =
+  AuthenticatedAuditPlantIdRouteImport.update({
+    id: '/$plantId',
+    path: '/$plantId',
+    getParentRoute: () => AuthenticatedAuditRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/audit': typeof AuthenticatedAuditRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gap-verification': typeof AuthenticatedGapVerificationRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -123,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/purchase': typeof AuthenticatedPurchaseRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/scrap': typeof AuthenticatedScrapRoute
+  '/audit/$plantId': typeof AuthenticatedAuditPlantIdRoute
   '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/masters/materials': typeof AuthenticatedMastersMaterialsRoute
   '/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
@@ -133,6 +148,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/audit': typeof AuthenticatedAuditRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gap-verification': typeof AuthenticatedGapVerificationRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -140,6 +156,7 @@ export interface FileRoutesByTo {
   '/purchase': typeof AuthenticatedPurchaseRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/scrap': typeof AuthenticatedScrapRoute
+  '/audit/$plantId': typeof AuthenticatedAuditPlantIdRoute
   '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/masters/materials': typeof AuthenticatedMastersMaterialsRoute
   '/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
@@ -152,6 +169,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/audit': typeof AuthenticatedAuditRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/gap-verification': typeof AuthenticatedGapVerificationRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
@@ -159,6 +177,7 @@ export interface FileRoutesById {
   '/_authenticated/purchase': typeof AuthenticatedPurchaseRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/scrap': typeof AuthenticatedScrapRoute
+  '/_authenticated/audit/$plantId': typeof AuthenticatedAuditPlantIdRoute
   '/_authenticated/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/_authenticated/masters/materials': typeof AuthenticatedMastersMaterialsRoute
   '/_authenticated/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
@@ -171,6 +190,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/audit'
     | '/dashboard'
     | '/gap-verification'
     | '/inventory'
@@ -178,6 +198,7 @@ export interface FileRouteTypes {
     | '/purchase'
     | '/reports'
     | '/scrap'
+    | '/audit/$plantId'
     | '/masters/departments'
     | '/masters/materials'
     | '/masters/pipe-sizes'
@@ -188,6 +209,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/audit'
     | '/dashboard'
     | '/gap-verification'
     | '/inventory'
@@ -195,6 +217,7 @@ export interface FileRouteTypes {
     | '/purchase'
     | '/reports'
     | '/scrap'
+    | '/audit/$plantId'
     | '/masters/departments'
     | '/masters/materials'
     | '/masters/pipe-sizes'
@@ -206,6 +229,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/audit'
     | '/_authenticated/dashboard'
     | '/_authenticated/gap-verification'
     | '/_authenticated/inventory'
@@ -213,6 +237,7 @@ export interface FileRouteTypes {
     | '/_authenticated/purchase'
     | '/_authenticated/reports'
     | '/_authenticated/scrap'
+    | '/_authenticated/audit/$plantId'
     | '/_authenticated/masters/departments'
     | '/_authenticated/masters/materials'
     | '/_authenticated/masters/pipe-sizes'
@@ -299,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/audit': {
+      id: '/_authenticated/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthenticatedAuditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/masters/suppliers': {
       id: '/_authenticated/masters/suppliers'
       path: '/masters/suppliers'
@@ -341,10 +373,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMastersDepartmentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/audit/$plantId': {
+      id: '/_authenticated/audit/$plantId'
+      path: '/$plantId'
+      fullPath: '/audit/$plantId'
+      preLoaderRoute: typeof AuthenticatedAuditPlantIdRouteImport
+      parentRoute: typeof AuthenticatedAuditRoute
+    }
   }
 }
 
+interface AuthenticatedAuditRouteChildren {
+  AuthenticatedAuditPlantIdRoute: typeof AuthenticatedAuditPlantIdRoute
+}
+
+const AuthenticatedAuditRouteChildren: AuthenticatedAuditRouteChildren = {
+  AuthenticatedAuditPlantIdRoute: AuthenticatedAuditPlantIdRoute,
+}
+
+const AuthenticatedAuditRouteWithChildren =
+  AuthenticatedAuditRoute._addFileChildren(AuthenticatedAuditRouteChildren)
+
 interface AuthenticatedRouteChildren {
+  AuthenticatedAuditRoute: typeof AuthenticatedAuditRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedGapVerificationRoute: typeof AuthenticatedGapVerificationRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
@@ -361,6 +412,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAuditRoute: AuthenticatedAuditRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedGapVerificationRoute: AuthenticatedGapVerificationRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
@@ -388,13 +440,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

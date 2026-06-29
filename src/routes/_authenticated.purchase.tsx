@@ -10,10 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CheckCircle2, Calculator } from "lucide-react";
+import { Plus, CheckCircle2, Calculator, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum, fmtCurrency, fmtDate } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
+import { ExportMenu } from "@/components/export-menu";
+import { ExcelImport } from "@/components/excel-import";
 
 export const Route = createFileRoute("/_authenticated/purchase")({ component: Page });
 
@@ -58,10 +60,77 @@ function Page() {
     onError:(e:any)=>toast.error(e.message),
   });
 
+  const reject = useMutation({
+    mutationFn: async (id:string) => { const { error } = await supabase.from("purchase_orders").update({ status:"rejected" }).eq("id", id); if (error) throw error; },
+    onSuccess: () => { toast.success("PO rejected"); qc.invalidateQueries({queryKey:["purchase"]}); },
+    onError:(e:any)=>toast.error(e.message),
+  });
+
+  const importRows = async (rows: Record<string, any>[]) => {
+    const errors: { row: number; msg: string }[] = [];
+    let ok = 0;
+    const supByCode = new Map((suppliers ?? []).map((s:any)=>[s.code, s.id]));
+    const matByCode = new Map((materials ?? []).map((m:any)=>[m.code, m.id]));
+    const plByCode = new Map((plants ?? []).map((p:any)=>[p.code, p.id]));
+    for (let i=0;i<rows.length;i++){
+      const r = rows[i];
+      const supplier_id = supByCode.get(String(r.supplier_code).trim());
+      const material_id = matByCode.get(String(r.material_code).trim());
+      const plant_id = plByCode.get(String(r.plant_code).trim());
+      if (!supplier_id) { errors.push({ row:i+2, msg:`Unknown supplier_code ${r.supplier_code}` }); continue; }
+      if (!material_id) { errors.push({ row:i+2, msg:`Unknown material_code ${r.material_code}` }); continue; }
+      if (!plant_id) { errors.push({ row:i+2, msg:`Unknown plant_code ${r.plant_code}` }); continue; }
+      const qty = Number(r.quantity), rate = Number(r.rate);
+      if (!isFinite(qty) || qty<=0) { errors.push({ row:i+2, msg:"quantity must be > 0" }); continue; }
+      if (!isFinite(rate) || rate<0) { errors.push({ row:i+2, msg:"rate must be a number" }); continue; }
+      const { error } = await supabase.from("purchase_orders").insert({
+        po_date: r.po_date, supplier_id, material_id, plant_id,
+        quantity: qty, rate, gst_pct: Number(r.gst_pct ?? 18),
+        transport: Number(r.transport ?? 0), received_qty: Number(r.received_qty ?? 0),
+        invoice_no: r.invoice_no || null, remarks: r.remarks ?? null,
+      });
+      if (error) errors.push({ row:i+2, msg:error.message }); else ok++;
+    }
+    qc.invalidateQueries({queryKey:["purchase"]});
+    return { ok, errors };
+  };
+
   return (
     <>
       <PageHeader title="Purchase Orders" subtitle="GST and totals auto-calculated; approval posts inventory IN"
         actions={
+          <div className="flex items-center gap-2">
+          <ExportMenu filename="purchase_orders" title="Purchase Orders"
+            rows={data ?? []}
+            columns={[
+              { header:"PO #", accessor:(r:any)=>r.po_no },
+              { header:"Date", accessor:(r:any)=>r.po_date },
+              { header:"Supplier", accessor:(r:any)=> r.suppliers ? `${r.suppliers.code} ${r.suppliers.name}` : "" },
+              { header:"Material", accessor:(r:any)=> r.materials ? `${r.materials.code} ${r.materials.name}` : "" },
+              { header:"Plant", accessor:(r:any)=>r.plants?.code ?? "" },
+              { header:"Qty", accessor:(r:any)=>r.quantity },
+              { header:"Rate", accessor:(r:any)=>r.rate },
+              { header:"GST %", accessor:(r:any)=>r.gst_pct },
+              { header:"Total", accessor:(r:any)=>r.total_amount },
+              { header:"Pending", accessor:(r:any)=>r.pending_qty },
+              { header:"Status", accessor:(r:any)=>r.status },
+            ]} />
+          <ExcelImport templateName="purchase_template"
+            fields={[
+              { key:"po_date", label:"po_date", required:true, type:"date" },
+              { key:"supplier_code", label:"supplier_code", required:true },
+              { key:"material_code", label:"material_code", required:true },
+              { key:"plant_code", label:"plant_code", required:true },
+              { key:"quantity", label:"quantity", required:true, type:"number" },
+              { key:"rate", label:"rate", required:true, type:"number" },
+              { key:"gst_pct", label:"gst_pct", type:"number" },
+              { key:"transport", label:"transport", type:"number" },
+              { key:"received_qty", label:"received_qty", type:"number" },
+              { key:"invoice_no", label:"invoice_no" },
+              { key:"remarks", label:"remarks" },
+            ]}
+            sample={[new Date().toISOString().slice(0,10), "SUP-01", "MAT-001", "PL-01", 100, 250, 18, 500, 0, "INV-1001", ""]}
+            onImport={importRows} />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="size-4 mr-1"/>New PO</Button></DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -110,6 +179,7 @@ function Page() {
               <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.supplier_id || !f.material_id || !f.plant_id || f.quantity<=0 || create.isPending}>Save</Button></DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         } />
       <PageBody>
         <DataTable rows={data ?? undefined} columns={[
@@ -123,9 +193,12 @@ function Page() {
           { header:"Total", cell:(r:any)=> fmtCurrency(r.total_amount) },
           { header:"Pending", cell:(r:any)=> fmtNum(r.pending_qty) },
           { header:"Status", cell:(r:any)=> <Badge variant={r.status==="approved"?"default":r.status==="rejected"?"destructive":"secondary"} className="capitalize">{r.status}</Badge> },
-          { header:"", cell:(r:any)=> canApprove && r.status!=="approved"
-            ? <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
-            : null },
+          { header:"", cell:(r:any)=> canApprove && r.status!=="approved" && r.status!=="rejected" ? (
+            <div className="flex gap-1">
+              <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
+              <Button size="sm" variant="ghost" className="text-destructive" onClick={()=>reject.mutate(r.id)}><XCircle className="size-4 mr-1"/>Reject</Button>
+            </div>
+          ) : null },
         ]} />
       </PageBody>
     </>

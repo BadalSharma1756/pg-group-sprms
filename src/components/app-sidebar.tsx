@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Factory, ShoppingCart, Boxes, ClipboardCheck, Trash2, BarChart3,
-  Building2, Layers, Truck, Ruler, Package, Wrench, LogOut,
+  Building2, Layers, Truck, Ruler, Package, Wrench, LogOut, History,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ const groups: { label: string; items: { to: string; icon: any; label: string }[]
   ]},
   { label: "Insights", items: [
     { to: "/reports", icon: BarChart3, label: "Reports" },
+    { to: "/audit", icon: History, label: "Audit Log" },
   ]},
 ];
 

@@ -18,9 +18,14 @@ export type Database = {
         Row: {
           action: string
           created_at: string
+          department_id: string | null
           detail: Json | null
+          entity_label: string | null
           id: number
           ip: string | null
+          new_status: string | null
+          old_status: string | null
+          plant_id: string | null
           record_id: string | null
           table_name: string | null
           user_id: string | null
@@ -28,9 +33,14 @@ export type Database = {
         Insert: {
           action: string
           created_at?: string
+          department_id?: string | null
           detail?: Json | null
+          entity_label?: string | null
           id?: number
           ip?: string | null
+          new_status?: string | null
+          old_status?: string | null
+          plant_id?: string | null
           record_id?: string | null
           table_name?: string | null
           user_id?: string | null
@@ -38,14 +48,41 @@ export type Database = {
         Update: {
           action?: string
           created_at?: string
+          department_id?: string | null
           detail?: Json | null
+          entity_label?: string | null
           id?: number
           ip?: string | null
+          new_status?: string | null
+          old_status?: string | null
+          plant_id?: string | null
           record_id?: string | null
           table_name?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "v_current_stock"
+            referencedColumns: ["plant_id"]
+          },
+        ]
       }
       departments: {
         Row: {
