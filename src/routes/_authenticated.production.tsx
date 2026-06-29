@@ -170,7 +170,9 @@ function Page() {
         } />
       <PageBody>
         <EntryListView
-          storageKey="production-view"
+          storageKey="entry-view"
+          tableName="production_entries"
+          searchPlaceholder="Search by product, plant, dept, remarks…"
           detailTitle="Production entry"
           rows={data ?? undefined}
           columns={[
@@ -193,7 +195,6 @@ function Page() {
             { label:"Total meters consumed", value:(r:any)=> fmtNum(r.total_meter_consumed,3) },
             { label:"6m pipes consumed", value:(r:any)=> fmtNum(r.pipes_consumed_6m,2) },
             { label:"4m pipes consumed", value:(r:any)=> fmtNum(r.pipes_consumed_4m,2) },
-            { label:"Status", value:(r:any)=> <Badge variant="outline" className="capitalize">{r.status}</Badge> },
             { label:"Remarks", value:(r:any)=> r.remarks || "—", full:true },
           ]}
         />
