@@ -1,23 +1,99 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageBody, PageHeader } from "@/components/page-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { fmtNum, fmtDateTime } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sliders } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/inventory")({ component: Page });
 
 function Page() {
+  const qc = useQueryClient();
   const { data: stock } = useQuery({ queryKey:["stock"], queryFn: async () =>
     (await supabase.from("v_current_stock").select("*").order("material_code")).data });
   const { data: txns } = useQuery({ queryKey:["txns"], queryFn: async () =>
     (await supabase.from("inventory_transactions").select("*, materials(code,name), plants(code)").order("txn_date",{ascending:false}).limit(300)).data });
+  const { data: materials } = useQuery({ queryKey:["mat-lite-inv"], queryFn: async () => (await supabase.from("materials").select("id,code,name")).data });
+  const { data: plants } = useQuery({ queryKey:["plants-lite-inv"], queryFn: async () => (await supabase.from("plants").select("id,code")).data });
+
+  const [open, setOpen] = useState(false);
+  const [a, setA] = useState({ material_id: "", plant_id: "", direction: "in" as "in" | "out", quantity: 0, remarks: "" });
+  const adjust = useMutation({
+    mutationFn: async () => {
+      const payload: any = {
+        txn_date: new Date().toISOString(),
+        material_id: a.material_id,
+        plant_id: a.plant_id,
+        txn_type: "adjustment",
+        qty_in: a.direction === "in" ? a.quantity : 0,
+        qty_out: a.direction === "out" ? a.quantity : 0,
+        remarks: `Manual adjustment: ${a.remarks || "—"}`,
+      };
+      const { error } = await supabase.from("inventory_transactions").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Adjustment posted to ledger");
+      setOpen(false);
+      setA({ material_id: "", plant_id: "", direction: "in", quantity: 0, remarks: "" });
+      qc.invalidateQueries({ queryKey: ["stock"] });
+      qc.invalidateQueries({ queryKey: ["txns"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <>
-      <PageHeader title="Inventory" subtitle="Real-time stock from the transaction ledger" />
+      <PageHeader title="Inventory" subtitle="Real-time stock from the transaction ledger"
+        actions={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button variant="outline"><Sliders className="size-4 mr-1"/>Manual adjustment</Button></DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Inventory adjustment</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Plant</Label>
+                    <Select value={a.plant_id} onValueChange={(v)=>setA({...a, plant_id:v})}>
+                      <SelectTrigger><SelectValue placeholder="Plant"/></SelectTrigger>
+                      <SelectContent>{(plants ?? []).map((p:any)=> <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Material</Label>
+                    <Select value={a.material_id} onValueChange={(v)=>setA({...a, material_id:v})}>
+                      <SelectTrigger><SelectValue placeholder="Material"/></SelectTrigger>
+                      <SelectContent>{(materials ?? []).map((m:any)=> <SelectItem key={m.id} value={m.id}>{m.code} — {m.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Direction</Label>
+                    <Select value={a.direction} onValueChange={(v:any)=>setA({...a, direction:v})}>
+                      <SelectTrigger><SelectValue/></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="in">IN (+ add stock)</SelectItem>
+                        <SelectItem value="out">OUT (− reduce stock)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Quantity</Label><Input type="number" step="0.001" value={a.quantity} onChange={(e)=>setA({...a, quantity:Number(e.target.value)})}/></div>
+                </div>
+                <div><Label>Remarks / Reason</Label><Textarea value={a.remarks} onChange={(e)=>setA({...a, remarks:e.target.value})} placeholder="Stock-take correction, damaged, return, etc."/></div>
+              </div>
+              <DialogFooter><Button onClick={()=>adjust.mutate()} disabled={!a.material_id || !a.plant_id || a.quantity<=0 || adjust.isPending}>Post adjustment</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
+        } />
       <PageBody>
         <Tabs defaultValue="stock">
           <TabsList><TabsTrigger value="stock">Current Stock</TabsTrigger><TabsTrigger value="ledger">Ledger</TabsTrigger></TabsList>
