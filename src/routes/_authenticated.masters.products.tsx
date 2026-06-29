@@ -12,6 +12,7 @@ import { DataTable } from "@/components/data-table";
 import { Plus, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/format";
+import { BomEditor } from "@/components/bom-editor";
 
 export const Route = createFileRoute("/_authenticated/masters/products")({ component: Page });
 
@@ -119,6 +120,7 @@ function Page() {
           { header:"Total m", cell:(r:any)=> fmtNum(r.total_meter,3) },
           { header:"4 m pipes", cell:(r:any)=> fmtNum(r.pipes_required_4m,3) },
           { header:"6 m pipes", cell:(r:any)=> fmtNum(r.pipes_required_6m,3) },
+          { header:"BOM", cell:(r:any)=> <BomEditor productId={r.id} productName={`${r.code} — ${r.name}`} /> },
         ]} />
       </PageBody>
     </>
