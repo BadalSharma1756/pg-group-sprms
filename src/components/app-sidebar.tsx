@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Factory, ShoppingCart, Boxes, ClipboardCheck, Trash2, BarChart3,
-  Building2, Layers, Truck, Ruler, Package, Wrench, Users, ScrollText, LogOut, Settings,
+  Building2, Layers, Truck, Ruler, Package, Wrench, LogOut,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
