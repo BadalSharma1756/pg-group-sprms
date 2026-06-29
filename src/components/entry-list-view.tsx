@@ -6,9 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, LayoutGrid, List, Search, FileText, Activity, Paperclip, Loader2 } from "lucide-react";
+import { Eye, LayoutGrid, List, Search, FileText, Paperclip, Loader2, PackageSearch, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fmtDateTime } from "@/lib/format";
+import { fmtDateTime, fmtNum } from "@/lib/format";
 
 export interface ListColumn<T> {
   header: string;
@@ -167,7 +167,7 @@ export function EntryListView<T extends { id: string | number }>({
             <Tabs defaultValue="details" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="details"><FileText className="size-3.5 mr-1.5" />Entry details</TabsTrigger>
-                <TabsTrigger value="activity"><Activity className="size-3.5 mr-1.5" />Activity</TabsTrigger>
+                <TabsTrigger value="ledger"><PackageSearch className="size-3.5 mr-1.5" />Inventory ledger</TabsTrigger>
                 <TabsTrigger value="attachments"><Paperclip className="size-3.5 mr-1.5" />Attachments</TabsTrigger>
               </TabsList>
               <TabsContent value="details" className="mt-4">
@@ -180,8 +180,8 @@ export function EntryListView<T extends { id: string | number }>({
                   ))}
                 </div>
               </TabsContent>
-              <TabsContent value="activity" className="mt-4">
-                <ActivityTimeline tableName={tableName} recordId={String(active.id)} />
+              <TabsContent value="ledger" className="mt-4">
+                <InventoryImpact tableName={tableName} recordId={String(active.id)} />
               </TabsContent>
               <TabsContent value="attachments" className="mt-4">
                 <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
@@ -197,40 +197,52 @@ export function EntryListView<T extends { id: string | number }>({
   );
 }
 
-function ActivityTimeline({ tableName, recordId }: { tableName?: string; recordId: string }) {
+function InventoryImpact({ tableName, recordId }: { tableName?: string; recordId: string }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["entry-activity", tableName, recordId],
+    queryKey: ["entry-ledger", tableName, recordId],
     enabled: !!tableName,
     queryFn: async () => (await supabase
-      .from("audit_logs")
-      .select("id, action, created_at, entity_label, old_status, new_status, detail, profiles(full_name, email)")
-      .eq("table_name", tableName!)
-      .eq("record_id", recordId)
-      .order("created_at", { ascending: false })
-      .limit(50)).data,
+      .from("inventory_transactions")
+      .select("id, txn_date, txn_type, qty_in, qty_out, remarks, materials(code, name, uom)")
+      .eq("ref_table", tableName!)
+      .eq("ref_id", recordId)
+      .order("txn_date", { ascending: false })
+      .limit(100)).data,
   });
-  if (!tableName) return <div className="text-sm text-muted-foreground p-4 text-center">Activity not configured.</div>;
-  if (isLoading) return <div className="flex items-center justify-center p-8 text-muted-foreground"><Loader2 className="size-4 animate-spin mr-2" />Loading activity…</div>;
-  if (!data || data.length === 0) return <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">No activity recorded yet.</div>;
+  if (!tableName) return <div className="text-sm text-muted-foreground p-4 text-center">Ledger lookup not configured.</div>;
+  if (isLoading) return <div className="flex items-center justify-center p-8 text-muted-foreground"><Loader2 className="size-4 animate-spin mr-2" />Loading inventory impact…</div>;
+  if (!data || data.length === 0) return <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">No inventory movements posted for this entry.</div>;
+  const totIn = data.reduce((s: number, r: any) => s + Number(r.qty_in || 0), 0);
+  const totOut = data.reduce((s: number, r: any) => s + Number(r.qty_out || 0), 0);
   return (
-    <div className="relative pl-5 space-y-3 max-h-80 overflow-y-auto">
-      <div className="absolute left-1.5 top-1 bottom-1 w-px bg-border" />
-      {data.map((e: any) => (
-        <div key={e.id} className="relative">
-          <div className="absolute -left-[14px] top-1.5 size-2.5 rounded-full bg-primary ring-2 ring-background" />
-          <div className="text-xs">
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span className="font-semibold capitalize text-foreground">{e.action}</span>
-              {e.new_status && <span className="text-muted-foreground">→ {e.new_status}</span>}
-              <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground">{fmtDateTime(e.created_at)}</span>
-            </div>
-            <div className="mt-0.5 text-muted-foreground">
-              by {e.profiles?.full_name || e.profiles?.email || "system"}
-            </div>
-          </div>
-        </div>
-      ))}
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className="rounded-md border bg-emerald-50 p-2"><div className="text-emerald-700/80 flex items-center gap-1"><ArrowDownToLine className="size-3" /> Total In</div><div className="font-semibold text-emerald-900 tabular-nums">{fmtNum(totIn)}</div></div>
+        <div className="rounded-md border bg-rose-50 p-2"><div className="text-rose-700/80 flex items-center gap-1"><ArrowUpFromLine className="size-3" /> Total Out</div><div className="font-semibold text-rose-900 tabular-nums">{fmtNum(totOut)}</div></div>
+        <div className="rounded-md border bg-slate-50 p-2"><div className="text-slate-600">Lines</div><div className="font-semibold text-slate-900 tabular-nums">{data.length}</div></div>
+      </div>
+      <div className="rounded-lg border overflow-hidden max-h-80 overflow-y-auto">
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead className="text-xs">Date</TableHead>
+            <TableHead className="text-xs">Material</TableHead>
+            <TableHead className="text-xs">Type</TableHead>
+            <TableHead className="text-xs text-right">In</TableHead>
+            <TableHead className="text-xs text-right">Out</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {data.map((r: any) => (
+              <TableRow key={r.id}>
+                <TableCell className="text-xs">{fmtDateTime(r.txn_date)}</TableCell>
+                <TableCell className="text-xs"><span className="font-medium">{r.materials?.code}</span> <span className="text-muted-foreground">{r.materials?.name}</span></TableCell>
+                <TableCell className="text-xs capitalize">{String(r.txn_type).replace(/_/g, " ")}</TableCell>
+                <TableCell className="text-xs text-right tabular-nums text-emerald-700">{r.qty_in > 0 ? fmtNum(r.qty_in) : "—"}</TableCell>
+                <TableCell className="text-xs text-right tabular-nums text-rose-700">{r.qty_out > 0 ? fmtNum(r.qty_out) : "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
