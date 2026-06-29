@@ -98,7 +98,6 @@ function Page() {
               { header:"GST %", accessor:(r:any)=>r.gst_pct },
               { header:"Total", accessor:(r:any)=>r.total_amount },
               { header:"Pending", accessor:(r:any)=>r.pending_qty },
-              { header:"Status", accessor:(r:any)=>r.status },
             ]} />
           <ExcelImport templateName="purchase_template"
             fields={[
@@ -177,13 +176,6 @@ function Page() {
           { header:"Rate", cell:(r:any)=> fmtCurrency(r.rate) },
           { header:"Total", cell:(r:any)=> fmtCurrency(r.total_amount) },
           { header:"Pending", cell:(r:any)=> fmtNum(r.pending_qty) },
-          { header:"Status", cell:(r:any)=> <Badge variant={r.status==="approved"?"default":r.status==="rejected"?"destructive":"secondary"} className="capitalize">{r.status}</Badge> },
-          { header:"", cell:(r:any)=> canApprove && r.status!=="approved" && r.status!=="rejected" ? (
-            <div className="flex gap-1">
-              <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
-              <Button size="sm" variant="ghost" className="text-destructive" onClick={()=>reject.mutate(r.id)}><XCircle className="size-4 mr-1"/>Reject</Button>
-            </div>
-          ) : null },
         ]} />
       </PageBody>
     </>
