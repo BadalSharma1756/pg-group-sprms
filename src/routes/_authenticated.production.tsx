@@ -106,7 +106,6 @@ function Page() {
               { header:"Meters", accessor:(r:any)=>r.total_meter_consumed },
               { header:"6m pipes", accessor:(r:any)=>r.pipes_consumed_6m },
               { header:"4m pipes", accessor:(r:any)=>r.pipes_consumed_4m },
-              { header:"Status", accessor:(r:any)=>r.status },
             ]} />
           <ExcelImport templateName="production_template"
             fields={[
