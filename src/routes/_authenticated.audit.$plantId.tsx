@@ -32,8 +32,8 @@ const tableLabel: Record<string, string> = {
 function Page() {
   const { plantId } = Route.useParams();
   const today = new Date().toISOString().slice(0,10);
-  const weekAgo = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
-  const [from, setFrom] = useState(weekAgo);
+  const monthAgo = new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+  const [from, setFrom] = useState(monthAgo);
   const [to, setTo] = useState(today);
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [tableFilter, setTableFilter] = useState<string>("all");
@@ -131,7 +131,10 @@ function Page() {
 
         <div className="rounded-md border bg-card divide-y">
           {(logs ?? []).length === 0 && (
-            <div className="p-8 text-center text-sm text-muted-foreground">No activity for the selected filters.</div>
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No activity recorded for this plant between <b>{from}</b> and <b>{to}</b>.
+              <div className="mt-1 text-xs">Try widening the date range or clearing the module/department filters.</div>
+            </div>
           )}
           {(logs ?? []).map((l:any) => {
             const Icon = tableIcon[l.table_name] ?? Edit;

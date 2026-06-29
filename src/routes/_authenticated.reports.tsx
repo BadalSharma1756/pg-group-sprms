@@ -44,7 +44,7 @@ function Page() {
   const topMaterials = rank((cons ?? []) as any[], (r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—", "qty_out").slice(0,10);
   const byPlant = rank((prod ?? []) as any[], (r:any)=> r.plants?.code ?? "—", "total_meter_consumed");
   const byDept  = rank((prod ?? []) as any[], (r:any)=> r.departments ? `${r.departments.code}` : "—", "total_meter_consumed");
-  const PIE_COLORS = ["hsl(var(--primary))","hsl(var(--chart-2))","hsl(var(--chart-3))","hsl(var(--chart-4))","hsl(var(--chart-5))","hsl(var(--accent))"];
+  const PIE_COLORS = ["var(--primary)","var(--chart-2)","var(--chart-3)","var(--chart-4)","var(--chart-5)","var(--chart-1)"];
 
   return (
     <>
@@ -90,8 +90,8 @@ function Page() {
                 <BarChart data={prodSeries}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
                   <XAxis dataKey="date" fontSize={11}/><YAxis fontSize={11}/><Tooltip/>
-                  <Bar dataKey="quantity" fill="hsl(var(--primary))" />
-                  <Bar dataKey="total_meter_consumed" fill="hsl(var(--chart-2))" />
+                  <Bar dataKey="quantity" fill="var(--primary)" radius={[4,4,0,0]} />
+                  <Bar dataKey="total_meter_consumed" fill="var(--chart-2)" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -103,8 +103,8 @@ function Page() {
                 <LineChart data={purSeries}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
                   <XAxis dataKey="date" fontSize={11}/><YAxis fontSize={11}/><Tooltip/>
-                  <Line type="monotone" dataKey="quantity" stroke="hsl(var(--primary))" strokeWidth={2}/>
-                  <Line type="monotone" dataKey="total_amount" stroke="hsl(var(--chart-3))" strokeWidth={2}/>
+                  <Line type="monotone" dataKey="quantity" stroke="var(--primary)" strokeWidth={2} dot={false}/>
+                  <Line type="monotone" dataKey="total_amount" stroke="var(--chart-3)" strokeWidth={2} dot={false}/>
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -119,7 +119,7 @@ function Page() {
                 <BarChart data={byPlant} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
                   <XAxis type="number" fontSize={11}/><YAxis type="category" dataKey="key" width={80} fontSize={11}/><Tooltip/>
-                  <Bar dataKey="value" fill="hsl(var(--primary))"/>
+                  <Bar dataKey="value" fill="var(--primary)" radius={[0,4,4,0]}/>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
