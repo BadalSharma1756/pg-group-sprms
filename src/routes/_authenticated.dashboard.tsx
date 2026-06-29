@@ -94,13 +94,13 @@ function useCharts(plantIds: string[]) {
 
 function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: string; value: string; hint?: string; tone?: "default" | "warn" | "ok" }) {
   return (
-    <Card className="relative overflow-hidden shrink-0 w-[180px] snap-start">
-      <CardContent className="p-4">
+    <Card className="relative overflow-hidden">
+      <CardContent className="p-3">
         <div className="flex items-center justify-between gap-2">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">{label}</div>
-          <div className={`size-7 grid place-items-center rounded-md shrink-0 ${tone === "warn" ? "bg-destructive/10 text-destructive" : tone === "ok" ? "bg-[color:var(--color-success)]/10 text-[color:var(--color-success)]" : "bg-primary/10 text-primary"}`}><Icon className="size-4" /></div>
+          <div className={`size-6 grid place-items-center rounded-md shrink-0 ${tone === "warn" ? "bg-destructive/10 text-destructive" : tone === "ok" ? "bg-[color:var(--color-success)]/10 text-[color:var(--color-success)]" : "bg-primary/10 text-primary"}`}><Icon className="size-3.5" /></div>
         </div>
-        <div className="mt-2 text-xl font-semibold tabular-nums whitespace-nowrap">{value}</div>
+        <div className="mt-1.5 text-lg font-semibold tabular-nums whitespace-nowrap truncate">{value}</div>
         {hint && <div className="mt-1 text-[10px] text-muted-foreground truncate">{hint}</div>}
       </CardContent>
     </Card>
@@ -245,8 +245,8 @@ function Dashboard() {
             ]} />
         } />
       <PageBody>
-        <div className="sticky top-14 z-20 -mx-4 px-4 py-2 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b">
-          <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:thin]">
+        <div className="sticky top-16 z-20 -mx-6 px-6 pt-3 pb-3 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75 border-b">
+          <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
             <Kpi icon={Boxes} label="Today's Consumption (m)" value={fmtNum(k?.todaysConsumption)} />
             <Kpi icon={ShoppingCart} label="Today's Purchase Value" value={"₹ " + fmtNum(k?.todaysPurchaseAmt)} />

@@ -85,7 +85,7 @@ function LayoutInner() {
           </div>
           <div className="min-w-0 hidden sm:block">
             <div className="font-bold tracking-tight text-base leading-tight truncate text-foreground">SPRMS</div>
-            <div className="text-[10px] uppercase tracking-wider text-primary/80 font-medium">SS Pipe Ricco · v1.0</div>
+            <div className="text-[10px] uppercase tracking-wider text-primary/80 font-medium truncate">SS Pipe Ricco Management System</div>
           </div>
         </div>
         <div className="flex-1" />
