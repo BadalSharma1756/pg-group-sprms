@@ -94,14 +94,19 @@ function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: strin
       ? "bg-emerald-100 text-emerald-600"
       : "bg-sky-100 text-sky-600";
   return (
-    <Card className={`relative overflow-hidden border ${toneBg} transition-shadow hover:shadow-md`}>
+    <Card
+      tabIndex={0}
+      role="group"
+      aria-label={`${label}: ${value}`}
+      className={`relative overflow-hidden border ${toneBg} transition-all hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
+    >
       <CardContent className="p-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium leading-tight">{label}</div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-700 font-semibold leading-tight">{label}</div>
           <div className={`size-7 grid place-items-center rounded-lg shrink-0 ${iconBg}`}><Icon className="size-4" /></div>
         </div>
-        <div className="mt-2 text-xl font-bold tabular-nums whitespace-nowrap truncate text-slate-800">{value}</div>
-        {hint && <div className="mt-0.5 text-[10px] text-slate-500 truncate">{hint}</div>}
+        <div className="mt-2 text-xl font-bold tabular-nums whitespace-nowrap truncate text-slate-900">{value}</div>
+        {hint && <div className="mt-0.5 text-[10px] text-slate-600 truncate">{hint}</div>}
       </CardContent>
     </Card>
   );
