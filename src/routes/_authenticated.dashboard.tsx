@@ -81,15 +81,27 @@ function useCharts(plantIds: string[]) {
 }
 
 function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: string; value: string; hint?: string; tone?: "default" | "warn" | "ok" }) {
+  const toneBg =
+    tone === "warn"
+      ? "bg-gradient-to-br from-rose-50 to-amber-50 border-rose-200/60"
+      : tone === "ok"
+      ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/60"
+      : "bg-gradient-to-br from-sky-50 to-indigo-50 border-sky-200/60";
+  const iconBg =
+    tone === "warn"
+      ? "bg-rose-100 text-rose-600"
+      : tone === "ok"
+      ? "bg-emerald-100 text-emerald-600"
+      : "bg-sky-100 text-sky-600";
   return (
-    <Card className="relative overflow-hidden">
+    <Card className={`relative overflow-hidden border ${toneBg} transition-shadow hover:shadow-md`}>
       <CardContent className="p-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">{label}</div>
-          <div className={`size-6 grid place-items-center rounded-md shrink-0 ${tone === "warn" ? "bg-destructive/10 text-destructive" : tone === "ok" ? "bg-[color:var(--color-success)]/10 text-[color:var(--color-success)]" : "bg-primary/10 text-primary"}`}><Icon className="size-3.5" /></div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium leading-tight">{label}</div>
+          <div className={`size-7 grid place-items-center rounded-lg shrink-0 ${iconBg}`}><Icon className="size-4" /></div>
         </div>
-        <div className="mt-1.5 text-lg font-semibold tabular-nums whitespace-nowrap truncate">{value}</div>
-        {hint && <div className="mt-1 text-[10px] text-muted-foreground truncate">{hint}</div>}
+        <div className="mt-2 text-xl font-bold tabular-nums whitespace-nowrap truncate text-slate-800">{value}</div>
+        {hint && <div className="mt-0.5 text-[10px] text-slate-500 truncate">{hint}</div>}
       </CardContent>
     </Card>
   );

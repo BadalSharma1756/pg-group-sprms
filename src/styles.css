@@ -152,5 +152,7 @@
   /* Smooth scroll + offset so sticky KPI band never overlaps anchored content */
   html {
     scroll-padding-top: calc(var(--app-header-h, 64px) + 8px);
+    /* Default global zoom — UI renders at ~85% so more content is visible. */
+    zoom: 0.85;
   }
 }
