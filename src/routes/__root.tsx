@@ -16,6 +16,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
 import { Toaster } from "sonner";
 import { OfflineIndicator } from "../components/offline-indicator";
+import { SplashScreen } from "../components/splash-screen";
 
 function NotFoundComponent() {
   return (
@@ -82,14 +83,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "SPRMS — SS Pipe Ricco Management System" },
+      { name: "description", content: "SPRMS — SS Pipe Ricco Management System: production, inventory, BOM and gap verification ERP." },
+      { name: "author", content: "PG" },
+      { property: "og:title", content: "SPRMS — SS Pipe Ricco Management System" },
+      { property: "og:description", content: "Manufacturing ERP for SS Pipe production, inventory and gap verification." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -128,7 +128,7 @@ function RootComponent() {
   if (!persister) {
     return (
       <QueryClientProvider client={queryClient}>
-        <AuthProvider><Outlet /><Toaster position="top-right" richColors closeButton /></AuthProvider>
+        <AuthProvider><SplashScreen /><Outlet /><Toaster position="top-right" richColors closeButton /></AuthProvider>
       </QueryClientProvider>
     );
   }
@@ -136,6 +136,7 @@ function RootComponent() {
     <PersistQueryClientProvider client={queryClient}
       persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24, buster: "v1" }}>
       <AuthProvider>
+        <SplashScreen />
         <Outlet />
         <OfflineIndicator />
         <Toaster position="top-right" richColors closeButton />
