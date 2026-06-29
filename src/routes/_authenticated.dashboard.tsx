@@ -108,7 +108,7 @@ function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: strin
 }
 
 function Dashboard() {
-  const _unused = 0; void _unused;
+  // ...
   const plantIds = useScopedPlantIds();
   const { data: k } = useKpi(plantIds);
   const { data: chart } = useCharts(plantIds);
