@@ -283,6 +283,36 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          region: string | null
+          status: Database["public"]["Enums"]["entity_status"]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          region?: string | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          region?: string | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           allowed_wastage_pct: number
@@ -369,6 +399,7 @@ export type Database = {
           created_at: string
           id: string
           location: string | null
+          location_id: string | null
           name: string
           status: Database["public"]["Enums"]["entity_status"]
           updated_at: string
@@ -378,6 +409,7 @@ export type Database = {
           created_at?: string
           id?: string
           location?: string | null
+          location_id?: string | null
           name: string
           status?: Database["public"]["Enums"]["entity_status"]
           updated_at?: string
@@ -387,11 +419,20 @@ export type Database = {
           created_at?: string
           id?: string
           location?: string | null
+          location_id?: string | null
           name?: string
           status?: Database["public"]["Enums"]["entity_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "plants_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       production_entries: {
         Row: {
@@ -617,35 +658,63 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          default_plant_id: string | null
           email: string
           employee_code: string | null
           full_name: string
           id: string
+          location_id: string | null
           phone: string | null
           status: Database["public"]["Enums"]["entity_status"]
           updated_at: string
         }
         Insert: {
           created_at?: string
+          default_plant_id?: string | null
           email: string
           employee_code?: string | null
           full_name?: string
           id: string
+          location_id?: string | null
           phone?: string | null
           status?: Database["public"]["Enums"]["entity_status"]
           updated_at?: string
         }
         Update: {
           created_at?: string
+          default_plant_id?: string | null
           email?: string
           employee_code?: string | null
           full_name?: string
           id?: string
+          location_id?: string | null
           phone?: string | null
           status?: Database["public"]["Enums"]["entity_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_plant_id_fkey"
+            columns: ["default_plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_default_plant_id_fkey"
+            columns: ["default_plant_id"]
+            isOneToOne: false
+            referencedRelation: "v_current_stock"
+            referencedColumns: ["plant_id"]
+          },
+          {
+            foreignKeyName: "profiles_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchase_orders: {
         Row: {
@@ -878,6 +947,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_plants: {
+        Row: {
+          created_at: string
+          id: string
+          plant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_plants_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_plants_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "v_current_stock"
+            referencedColumns: ["plant_id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -929,6 +1034,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      user_can_access_plant: {
+        Args: { _plant_id: string; _user_id: string }
         Returns: boolean
       }
     }
