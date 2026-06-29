@@ -155,4 +155,15 @@
     /* Default global zoom — UI renders at ~85% so more content is visible. */
     zoom: 0.85;
   }
+
+  /* Remove native number input increment/decrement spinners globally */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
