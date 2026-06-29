@@ -33,7 +33,10 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { hasAny } = useAuth();
   const groups = hasAny(["super_admin"])
-    ? [...baseGroups, { label: "Administration", items: [{ to: "/admin/users", icon: Users, label: "User Management" }] }]
+    ? [...baseGroups, { label: "Administration", items: [
+        { to: "/admin/users", icon: Users, label: "User Management" },
+        { to: "/admin/auth-audit", icon: History, label: "Auth Audit" },
+      ] }]
     : baseGroups;
 
   return (
