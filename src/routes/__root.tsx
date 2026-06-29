@@ -92,9 +92,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "SPRMS — SS Pipe Ricco Management System: production, inventory, BOM and gap verification ERP." },
       { name: "author", content: "PG" },
       { property: "og:title", content: "SPRMS — SS Pipe Ricco Management System" },
-      { property: "og:description", content: "Manufacturing ERP for SS Pipe production, inventory and gap verification." },
+      { property: "og:description", content: "SPRMS — SS Pipe Ricco Management System: production, inventory, BOM and gap verification ERP." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "SPRMS — SS Pipe Ricco Management System" },
+      { name: "twitter:description", content: "SPRMS — SS Pipe Ricco Management System: production, inventory, BOM and gap verification ERP." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2f22efe2-5aa0-46e5-b736-39dec3d9bd9f/id-preview-82c26630--1ca6339d-a59d-444d-b85c-20d313201092.lovable.app-1782736330172.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2f22efe2-5aa0-46e5-b736-39dec3d9bd9f/id-preview-82c26630--1ca6339d-a59d-444d-b85c-20d313201092.lovable.app-1782736330172.png" },
     ],
     links: [
       {
