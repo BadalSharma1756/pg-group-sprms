@@ -5,8 +5,10 @@ import { recordOtpFailureInternal } from "./auth-events.functions";
 
 const EmailInput = z.object({ email: z.string().email() });
 const ALLOWED_DOMAIN = "pgel.in";
-function isAllowedEmail(email: string) {
-  return email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN);
+// TEMP: domain restriction disabled for testing. Re-enable by returning
+// `email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN)` once QA is done.
+function isAllowedEmail(_email: string) {
+  return true;
 }
 
 const LOCKOUT_WINDOW_MIN = 15;
