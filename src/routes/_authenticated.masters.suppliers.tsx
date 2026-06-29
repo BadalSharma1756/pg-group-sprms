@@ -11,6 +11,7 @@ import { DataTable } from "@/components/data-table";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { MasterRowActions } from "@/components/master-row-actions";
 
 export const Route = createFileRoute("/_authenticated/masters/suppliers")({ component: Page });
 
@@ -55,6 +56,14 @@ function Page() {
           { header:"GSTIN", cell:(r:any)=> r.gstin ?? "—" },
           { header:"Contact", cell:(r:any)=> r.contact ?? "—" },
           { header:"Status", cell:(r:any)=> <Badge variant={r.status==="active"?"default":"secondary"}>{r.status}</Badge> },
+          { header:"", className:"text-right w-32", cell:(r:any)=> <MasterRowActions table="suppliers" row={r} queryKey={["suppliers"]} label="supplier" fields={[
+            { name:"code", label:"Code", uppercase:true },
+            { name:"name", label:"Name" },
+            { name:"gstin", label:"GSTIN" },
+            { name:"contact", label:"Contact" },
+            { name:"email", label:"Email", type:"email" },
+            { name:"address", label:"Address" },
+          ]} /> },
         ]} />
       </PageBody>
     </>
