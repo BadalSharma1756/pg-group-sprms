@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
 export function DiagnosticsPanel() {
-  const { session, loading, roles } = useAuth();
+  const { session, loading, roles, hasAny } = useAuth();
+  if (!hasAny(["super_admin"])) return null;
   const [, force] = useState(0);
   const [lastGet, setLastGet] = useState<{ ok: boolean; ms: number; at: string; err?: string } | null>(null);
 
