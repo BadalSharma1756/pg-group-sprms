@@ -78,21 +78,21 @@ function LayoutInner() {
   };
   return (
     <div className="min-h-screen flex flex-col bg-background" style={{ ["--app-header-h" as any]: "64px" }}>
-      <header className="h-16 sticky top-0 z-50 bg-gradient-to-r from-primary/[0.06] via-card to-primary/[0.06] border-b border-primary/15 flex items-center gap-3 px-3 md:px-5 shadow-sm">
+      <header className="h-16 sticky top-0 z-50 bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground border-b border-primary/40 flex items-center gap-3 px-3 md:px-5 shadow-md">
         <button
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="size-9 grid place-items-center rounded-md hover:bg-accent text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="size-9 grid place-items-center rounded-md text-primary-foreground/90 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
         >
           <Menu className="size-5" />
         </button>
         <div className="flex items-center gap-3 min-w-0">
-          <div className="size-14 rounded-xl bg-primary/10 grid place-items-center shrink-0 p-1.5 ring-2 ring-primary/25 shadow-md">
-            <img src={logo.url} alt="PG" className="size-full object-contain" />
+          <div className="size-14 grid place-items-center shrink-0 shrink-0">
+            <img src={logo.url} alt="PG" className="size-full object-contain drop-shadow" />
           </div>
           <div className="min-w-0 hidden sm:block">
-            <div className="font-bold tracking-tight text-base leading-tight truncate text-foreground">SPRMS</div>
-            <div className="text-[10px] uppercase tracking-wider text-primary/80 font-medium truncate">SS Pipe Ricco Management System</div>
+            <div className="font-bold tracking-tight text-base leading-tight truncate text-primary-foreground">SPRMS</div>
+            <div className="text-[10px] uppercase tracking-wider text-primary-foreground/80 font-medium truncate">SS Pipe Ricco Management System</div>
           </div>
         </div>
         <div className="flex-1" />
