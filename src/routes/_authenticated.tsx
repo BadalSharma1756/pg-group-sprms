@@ -71,7 +71,7 @@ function LayoutInner() {
   };
   return (
     <div className="min-h-screen flex flex-col bg-background" style={{ ["--app-header-h" as any]: "64px" }}>
-      <header className="h-16 sticky top-0 z-40 bg-card/95 backdrop-blur border-b flex items-center gap-3 px-3 md:px-5">
+      <header className="h-16 sticky top-0 z-50 bg-card border-b flex items-center gap-3 px-3 md:px-5 shadow-sm">
         <button
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
