@@ -166,7 +166,9 @@ function Page() {
         } />
       <PageBody>
         <EntryListView
-          storageKey="purchase-view"
+          storageKey="entry-view"
+          tableName="purchase_orders"
+          searchPlaceholder="Search by PO, supplier, material, plant…"
           detailTitle="Purchase order"
           rows={data ?? undefined}
           columns={[
