@@ -32,7 +32,8 @@ function Page() {
   const { data: products } = useQuery({ queryKey:["prod-products"], queryFn: async () => (await supabase.from("products").select("id,code,name,plant_id,department_id,material_id,total_meter,pipes_required_6m,pipes_required_4m")).data });
 
   const [open,setOpen]=useState(false);
-  const [f,setF]=useState({ entry_date:new Date().toISOString().slice(0,10), shift:"day", product_id:"", quantity:0, remarks:"" });
+  type Shift = "morning"|"afternoon"|"night"|"general";
+  const [f,setF]=useState<{ entry_date:string; shift:Shift; product_id:string; quantity:number; remarks:string }>({ entry_date:new Date().toISOString().slice(0,10), shift:"morning", product_id:"", quantity:0, remarks:"" });
   const product = (products ?? []).find((p:any)=>p.id===f.product_id);
   const preview = useMemo(()=>{
     if(!product) return null;
@@ -54,14 +55,14 @@ function Page() {
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Production booked — consumption auto-calculated"); setOpen(false);
-      setF({ entry_date:new Date().toISOString().slice(0,10), shift:"day", product_id:"", quantity:0, remarks:"" });
+      setF({ entry_date:new Date().toISOString().slice(0,10), shift:"morning", product_id:"", quantity:0, remarks:"" });
       qc.invalidateQueries({queryKey:["production"]});
     },
     onError:(e:any)=>toast.error(e.message),
   });
 
   const approve = useMutation({
-    mutationFn: async (id:string) => { const { error } = await supabase.from("production_entries").update({ approval_status:"approved", approved_at: new Date().toISOString() }).eq("id", id); if (error) throw error; },
+    mutationFn: async (id:string) => { const { error } = await supabase.from("production_entries").update({ status:"approved", approved_at: new Date().toISOString() }).eq("id", id); if (error) throw error; },
     onSuccess: () => { toast.success("Approved — inventory updated"); qc.invalidateQueries({queryKey:["production"]}); },
     onError:(e:any)=>toast.error(e.message),
   });
@@ -78,10 +79,13 @@ function Page() {
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Date</Label><Input type="date" value={f.entry_date} onChange={(e)=>setF({...f, entry_date:e.target.value})}/></div>
                   <div><Label>Shift</Label>
-                    <Select value={f.shift} onValueChange={(v)=>setF({...f, shift:v})}>
+                    <Select value={f.shift} onValueChange={(v)=>setF({...f, shift: v as Shift})}>
                       <SelectTrigger><SelectValue/></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="day">Day</SelectItem><SelectItem value="night">Night</SelectItem><SelectItem value="general">General</SelectItem>
+                        <SelectItem value="morning">Morning</SelectItem>
+                        <SelectItem value="afternoon">Afternoon</SelectItem>
+                        <SelectItem value="night">Night</SelectItem>
+                        <SelectItem value="general">General</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -116,10 +120,10 @@ function Page() {
           { header:"Product", cell:(r:any)=> r.products ? `${r.products.code} — ${r.products.name}` : "—" },
           { header:"Plant / Dept", cell:(r:any)=> `${r.plants?.code ?? "—"} / ${r.departments?.code ?? "—"}` },
           { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
-          { header:"Meters", cell:(r:any)=> fmtNum(r.total_meter_consumption,3) },
+          { header:"Meters", cell:(r:any)=> fmtNum(r.total_meter_consumed,3) },
           { header:"6 m / 4 m", cell:(r:any)=> `${fmtNum(r.pipes_consumed_6m,2)} / ${fmtNum(r.pipes_consumed_4m,2)}` },
-          { header:"Status", cell:(r:any)=> <Badge variant={r.approval_status==="approved"?"default":r.approval_status==="rejected"?"destructive":"secondary"} className="capitalize">{r.approval_status}</Badge> },
-          { header:"", cell:(r:any)=> canApprove && r.approval_status!=="approved"
+          { header:"Status", cell:(r:any)=> <Badge variant={r.status==="approved"?"default":r.status==="rejected"?"destructive":"secondary"} className="capitalize">{r.status}</Badge> },
+          { header:"", cell:(r:any)=> canApprove && r.status!=="approved"
             ? <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
             : null },
         ]} />
