@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { ArrowLeft, ShieldAlert, Timer, Mail, KeyRound, ShieldCheck, Sparkles, Factory, Boxes, LineChart } from "lucide-react";
 import { logAuthEvent, checkLockout, recordOtpFailure } from "@/lib/auth-events.functions";
+import { requestOtpEmail } from "@/lib/smtp-otp.functions";
 import logo from "@/assets/pg-logo.png.asset.json";
 
 const OTP_EXPIRY_SEC = 10 * 60;
@@ -39,6 +40,7 @@ function AuthPage() {
   const logEvent = useServerFn(logAuthEvent);
   const check = useServerFn(checkLockout);
   const recordFail = useServerFn(recordOtpFailure);
+  const sendOtpSmtp = useServerFn(requestOtpEmail);
 
   useEffect(() => {
     if (session) navigate({ to: "/dashboard", replace: true });
@@ -63,15 +65,20 @@ function AuthPage() {
         toast.error(`Account temporarily locked. Try again at ${new Date(unlockAt).toLocaleTimeString()}`);
         return false;
       }
-      const { error } = await supabase.auth.signInWithOtp({
-        email, options: { shouldCreateUser: false },
-      });
-      if (error) {
-        await logEvent({ data: { email, event_type: "otp_sent", success: false, message: error.message } });
-        toast.error(error.message);
+      try {
+        const res: any = await sendOtpSmtp({ data: { email } });
+        if (res?.locked) {
+          setLockedUntil(new Date(res.unlock_at).getTime());
+          toast.error("Account temporarily locked. Try again later.");
+          return false;
+        }
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to send OTP");
         return false;
       }
-      await logEvent({ data: { email, event_type: isResend ? "resend_otp" : "otp_sent", success: true } });
+      if (isResend) {
+        await logEvent({ data: { email, event_type: "resend_otp", success: true } });
+      }
       toast.success(isResend ? "New OTP sent" : `OTP sent to ${email}`);
       setExpiresIn(OTP_EXPIRY_SEC);
       setCooldown(RESEND_COOLDOWN_SEC);
