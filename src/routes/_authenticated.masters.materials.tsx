@@ -12,6 +12,7 @@ import { DataTable } from "@/components/data-table";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/format";
+import { MasterRowActions } from "@/components/master-row-actions";
 
 export const Route = createFileRoute("/_authenticated/masters/materials")({ component: Page });
 
@@ -63,6 +64,13 @@ function Page() {
           { header:"Unit", cell:(r:any)=> r.unit },
           { header:"Reorder", cell:(r:any)=> fmtNum(r.reorder_level) },
           { header:"Wastage %", cell:(r:any)=> fmtNum(r.allowed_wastage_pct) },
+          { header:"", className:"text-right w-32", cell:(r:any)=> <MasterRowActions table="materials" row={r} queryKey={["materials"]} label="material" fields={[
+            { name:"code", label:"Code", uppercase:true },
+            { name:"name", label:"Name" },
+            { name:"unit", label:"Unit" },
+            { name:"reorder_level", label:"Reorder level", type:"number" },
+            { name:"allowed_wastage_pct", label:"Allowed wastage %", type:"number", step:"0.01" },
+          ]} /> },
         ]} />
       </PageBody>
     </>

@@ -19,7 +19,7 @@ function ProtectedLayout() {
   }, [session, loading, navigate]);
   useEffect(() => {
     if (!loading) return;
-    const t = setTimeout(() => setTimedOut(true), 8000);
+    const t = setTimeout(() => setTimedOut(true), 4000);
     return () => clearTimeout(t);
   }, [loading]);
 

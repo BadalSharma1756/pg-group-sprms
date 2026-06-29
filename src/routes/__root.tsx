@@ -17,6 +17,11 @@ import { AuthProvider } from "../lib/auth";
 import { Toaster } from "sonner";
 import { OfflineIndicator } from "../components/offline-indicator";
 import { SplashScreen } from "../components/splash-screen";
+import { DiagnosticsPanel } from "../components/diagnostics-panel";
+import { GlobalErrorOverlay } from "../components/global-error-overlay";
+import { installDiagnostics } from "../lib/diagnostics";
+
+if (typeof window !== "undefined") installDiagnostics();
 
 function NotFoundComponent() {
   return (
@@ -128,7 +133,7 @@ function RootComponent() {
   if (!persister) {
     return (
       <QueryClientProvider client={queryClient}>
-        <AuthProvider><SplashScreen /><Outlet /><Toaster position="top-right" richColors closeButton /></AuthProvider>
+        <AuthProvider><SplashScreen /><Outlet /><DiagnosticsPanel /><GlobalErrorOverlay /><Toaster position="top-right" richColors closeButton /></AuthProvider>
       </QueryClientProvider>
     );
   }
@@ -139,6 +144,8 @@ function RootComponent() {
         <SplashScreen />
         <Outlet />
         <OfflineIndicator />
+        <DiagnosticsPanel />
+        <GlobalErrorOverlay />
         <Toaster position="top-right" richColors closeButton />
       </AuthProvider>
     </PersistQueryClientProvider>

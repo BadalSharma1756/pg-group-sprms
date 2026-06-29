@@ -11,6 +11,7 @@ import { DataTable } from "@/components/data-table";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/format";
+import { MasterRowActions } from "@/components/master-row-actions";
 
 export const Route = createFileRoute("/_authenticated/masters/pipe-sizes")({ component: Page });
 
@@ -50,6 +51,12 @@ function Page() {
           { header:"OD (mm)", cell:(r:any)=> fmtNum(r.outer_diameter_mm,3) },
           { header:"Thickness (mm)", cell:(r:any)=> fmtNum(r.thickness_mm,3) },
           { header:"Weight / m (kg)", cell:(r:any)=> fmtNum(r.weight_per_meter_kg,4) },
+          { header:"", className:"text-right w-32", cell:(r:any)=> <MasterRowActions table="pipe_sizes" row={r} queryKey={["pipe-sizes"]} label="pipe size" fields={[
+            { name:"code", label:"Code", uppercase:true },
+            { name:"outer_diameter_mm", label:"OD (mm)", type:"number", step:"0.01" },
+            { name:"thickness_mm", label:"Thickness (mm)", type:"number", step:"0.01" },
+            { name:"weight_per_meter_kg", label:"Weight/m (kg)", type:"number", step:"0.001" },
+          ]} /> },
         ]} />
       </PageBody>
     </>
