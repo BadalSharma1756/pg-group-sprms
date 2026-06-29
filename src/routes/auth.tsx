@@ -72,6 +72,10 @@ function AuthPage() {
           toast.error("Account temporarily locked. Try again later.");
           return false;
         }
+        if (res?.ok === false) {
+          toast.error(res.message ?? "Unable to send OTP");
+          return false;
+        }
       } catch (e: any) {
         toast.error(e?.message ?? "Failed to send OTP");
         return false;
