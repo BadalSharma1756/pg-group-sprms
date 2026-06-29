@@ -11,10 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calculator, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum, fmtDate } from "@/lib/format";
-import { useAuth } from "@/lib/auth";
 import { ExportMenu } from "@/components/export-menu";
 import { ExcelImport } from "@/components/excel-import";
 
@@ -22,8 +21,6 @@ export const Route = createFileRoute("/_authenticated/production")({ component: 
 
 function Page() {
   const qc = useQueryClient();
-  const { hasAny } = useAuth();
-  const canApprove = hasAny(["super_admin","plant_admin","production_manager","store_manager"]);
 
   const { data } = useQuery({
     queryKey:["production"],
@@ -60,26 +57,14 @@ function Page() {
       const { error } = await supabase.from("production_entries").insert({
         entry_date: f.entry_date, shift: f.shift, product_id: f.product_id,
         plant_id: product.plant_id, department_id: product.department_id, material_id: product.material_id,
-        quantity: f.quantity, remarks: f.remarks,
+        quantity: f.quantity, remarks: f.remarks, status: "approved",
       });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Production booked — consumption auto-calculated"); setOpen(false);
+    onSuccess: () => { toast.success("Production booked — inventory updated"); setOpen(false);
       setF({ entry_date:new Date().toISOString().slice(0,10), shift:"morning", product_id:"", quantity:0, remarks:"" });
       qc.invalidateQueries({queryKey:["production"]});
     },
-    onError:(e:any)=>toast.error(e.message),
-  });
-
-  const approve = useMutation({
-    mutationFn: async (id:string) => { const { error } = await supabase.from("production_entries").update({ status:"approved", approved_at: new Date().toISOString() }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Approved — inventory updated"); qc.invalidateQueries({queryKey:["production"]}); },
-    onError:(e:any)=>toast.error(e.message),
-  });
-
-  const reject = useMutation({
-    mutationFn: async (id:string) => { const { error } = await supabase.from("production_entries").update({ status:"rejected" }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Entry rejected"); qc.invalidateQueries({queryKey:["production"]}); },
     onError:(e:any)=>toast.error(e.message),
   });
 
@@ -96,7 +81,7 @@ function Page() {
       const { error } = await supabase.from("production_entries").insert({
         entry_date: r.entry_date, shift: r.shift ?? "general", product_id: p.id,
         plant_id: p.plant_id, department_id: p.department_id, material_id: p.material_id,
-        quantity: qty, remarks: r.remarks ?? null,
+        quantity: qty, remarks: r.remarks ?? null, status: "approved",
       });
       if (error) errors.push({ row: i+2, msg: error.message }); else ok++;
     }
@@ -121,7 +106,6 @@ function Page() {
               { header:"Meters", accessor:(r:any)=>r.total_meter_consumed },
               { header:"6m pipes", accessor:(r:any)=>r.pipes_consumed_6m },
               { header:"4m pipes", accessor:(r:any)=>r.pipes_consumed_4m },
-              { header:"Status", accessor:(r:any)=>r.status },
             ]} />
           <ExcelImport templateName="production_template"
             fields={[
@@ -179,7 +163,7 @@ function Page() {
                   </div>
                 )}
               </div>
-              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.product_id || f.quantity<=0 || create.isPending}>Save (draft)</Button></DialogFooter>
+              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.product_id || f.quantity<=0 || create.isPending}>Save</Button></DialogFooter>
             </DialogContent>
           </Dialog>
           </div>
@@ -193,13 +177,6 @@ function Page() {
           { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
           { header:"Meters", cell:(r:any)=> fmtNum(r.total_meter_consumed,3) },
           { header:"6 m / 4 m", cell:(r:any)=> `${fmtNum(r.pipes_consumed_6m,2)} / ${fmtNum(r.pipes_consumed_4m,2)}` },
-          { header:"Status", cell:(r:any)=> <Badge variant={r.status==="approved"?"default":r.status==="rejected"?"destructive":"secondary"} className="capitalize">{r.status}</Badge> },
-          { header:"", cell:(r:any)=> canApprove && r.status!=="approved" && r.status!=="rejected" ? (
-            <div className="flex gap-1">
-              <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
-              <Button size="sm" variant="ghost" className="text-destructive" onClick={()=>reject.mutate(r.id)}><XCircle className="size-4 mr-1"/>Reject</Button>
-            </div>
-          ) : null },
         ]} />
       </PageBody>
     </>

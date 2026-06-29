@@ -9,11 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DataTable } from "@/components/data-table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, CheckCircle2, Calculator, XCircle } from "lucide-react";
+import { Plus, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum, fmtCurrency, fmtDate } from "@/lib/format";
-import { useAuth } from "@/lib/auth";
 import { ExportMenu } from "@/components/export-menu";
 import { ExcelImport } from "@/components/excel-import";
 
@@ -21,8 +19,6 @@ export const Route = createFileRoute("/_authenticated/purchase")({ component: Pa
 
 function Page() {
   const qc = useQueryClient();
-  const { hasAny } = useAuth();
-  const canApprove = hasAny(["super_admin","plant_admin","purchase_manager","store_manager"]);
 
   const { data } = useQuery({ queryKey:["purchase"], queryFn: async () =>
     (await supabase.from("purchase_orders").select("*, suppliers(code,name), materials(code,name), plants(code)").order("po_date",{ascending:false}).limit(200)).data });
@@ -41,28 +37,16 @@ function Page() {
 
   const create = useMutation({
     mutationFn: async () => {
-      const payload:any = { ...f };
+      const payload:any = { ...f, status: "approved" };
       if (!payload.invoice_date) delete payload.invoice_date;
       if (!payload.invoice_no) delete payload.invoice_no;
       const { error } = await supabase.from("purchase_orders").insert(payload);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Purchase order created"); setOpen(false);
+    onSuccess: () => { toast.success("Purchase booked — stock received"); setOpen(false);
       setF({ po_date:new Date().toISOString().slice(0,10), invoice_no:"", invoice_date:"", supplier_id:"", material_id:"", plant_id:"", quantity:0, rate:0, gst_pct:18, transport:0, received_qty:0, remarks:"" });
       qc.invalidateQueries({queryKey:["purchase"]});
     },
-    onError:(e:any)=>toast.error(e.message),
-  });
-
-  const approve = useMutation({
-    mutationFn: async (id:string) => { const { error } = await supabase.from("purchase_orders").update({ status:"approved", approved_at: new Date().toISOString() }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Approved — stock received"); qc.invalidateQueries({queryKey:["purchase"]}); },
-    onError:(e:any)=>toast.error(e.message),
-  });
-
-  const reject = useMutation({
-    mutationFn: async (id:string) => { const { error } = await supabase.from("purchase_orders").update({ status:"rejected" }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("PO rejected"); qc.invalidateQueries({queryKey:["purchase"]}); },
     onError:(e:any)=>toast.error(e.message),
   });
 
@@ -87,7 +71,7 @@ function Page() {
         po_date: r.po_date, supplier_id, material_id, plant_id,
         quantity: qty, rate, gst_pct: Number(r.gst_pct ?? 18),
         transport: Number(r.transport ?? 0), received_qty: Number(r.received_qty ?? 0),
-        invoice_no: r.invoice_no || null, remarks: r.remarks ?? null,
+        invoice_no: r.invoice_no || null, remarks: r.remarks ?? null, status: "approved",
       });
       if (error) errors.push({ row:i+2, msg:error.message }); else ok++;
     }
@@ -97,7 +81,7 @@ function Page() {
 
   return (
     <>
-      <PageHeader title="Purchase Orders" subtitle="GST and totals auto-calculated; approval posts inventory IN"
+      <PageHeader title="Purchase Orders" subtitle="GST and totals auto-calculated; booking posts inventory IN"
         actions={
           <div className="flex items-center gap-2">
           <ExportMenu filename="purchase_orders" title="Purchase Orders"
@@ -113,7 +97,6 @@ function Page() {
               { header:"GST %", accessor:(r:any)=>r.gst_pct },
               { header:"Total", accessor:(r:any)=>r.total_amount },
               { header:"Pending", accessor:(r:any)=>r.pending_qty },
-              { header:"Status", accessor:(r:any)=>r.status },
             ]} />
           <ExcelImport templateName="purchase_template"
             fields={[
@@ -192,13 +175,6 @@ function Page() {
           { header:"Rate", cell:(r:any)=> fmtCurrency(r.rate) },
           { header:"Total", cell:(r:any)=> fmtCurrency(r.total_amount) },
           { header:"Pending", cell:(r:any)=> fmtNum(r.pending_qty) },
-          { header:"Status", cell:(r:any)=> <Badge variant={r.status==="approved"?"default":r.status==="rejected"?"destructive":"secondary"} className="capitalize">{r.status}</Badge> },
-          { header:"", cell:(r:any)=> canApprove && r.status!=="approved" && r.status!=="rejected" ? (
-            <div className="flex gap-1">
-              <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
-              <Button size="sm" variant="ghost" className="text-destructive" onClick={()=>reject.mutate(r.id)}><XCircle className="size-4 mr-1"/>Reject</Button>
-            </div>
-          ) : null },
         ]} />
       </PageBody>
     </>
