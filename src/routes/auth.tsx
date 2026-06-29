@@ -127,7 +127,7 @@ function AuthPage() {
 
           <div className="relative flex items-center gap-3">
             <div className="size-12 rounded-xl bg-white/95 grid place-items-center shadow-lg ring-1 ring-white/40">
-              <img src={logo.src} alt="SPRMS" className="size-9 object-contain" />
+              <img src={logo.url} alt="SPRMS" className="size-9 object-contain" />
             </div>
             <div>
               <div className="font-bold tracking-tight text-lg leading-none">SPRMS</div>
@@ -171,7 +171,7 @@ function AuthPage() {
             {/* mobile brand */}
             <div className="lg:hidden flex flex-col items-center gap-2 mb-6">
               <div className="size-14 rounded-2xl bg-white grid place-items-center shadow-md ring-1 ring-slate-200">
-                <img src={logo.src} alt="SPRMS" className="size-10 object-contain" />
+                <img src={logo.url} alt="SPRMS" className="size-10 object-contain" />
               </div>
               <div className="text-center">
                 <div className="font-bold tracking-tight text-slate-900">SPRMS</div>
