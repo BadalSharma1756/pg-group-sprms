@@ -31,7 +31,7 @@ function Page() {
   const { data: products } = useQuery({ queryKey:["prod-products"], queryFn: async () => (await supabase.from("products").select("id,code,name,plant_id,department_id,material_id,total_meter,pipes_required_6m,pipes_required_4m")).data });
 
   const [open,setOpen]=useState(false);
-  type Shift = "morning"|"afternoon"|"night"|"general";
+ type Shift = "morning"|"night";
   const [f,setF]=useState<{ entry_date:string; shift:Shift; product_id:string; quantity:number; remarks:string }>({ entry_date:new Date().toISOString().slice(0,10), shift:"morning", product_id:"", quantity:0, remarks:"" });
   const product = (products ?? []).find((p:any)=>p.id===f.product_id);
 
@@ -129,7 +129,6 @@ function Page() {
                       <SelectTrigger><SelectValue/></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="morning">Morning</SelectItem>
-                        <SelectItem value="afternoon">Afternoon</SelectItem>
                         <SelectItem value="night">Night</SelectItem>
                         <SelectItem value="general">General</SelectItem>
                       </SelectContent>
