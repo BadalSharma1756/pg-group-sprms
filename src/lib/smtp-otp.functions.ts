@@ -229,10 +229,9 @@ export const verifyOtpEmail = createServerFn({ method: "POST" })
         ? (metadata as Record<string, unknown>).verification_type
         : undefined;
     const preferredType = OTP_VERIFY_TYPES.find((t) => t === storedType);
-    const verifyTypes = [
-      ...(OTP_VERIFY_TYPES.includes(preferredType) ? [preferredType] : []),
-      ...OTP_VERIFY_TYPES.filter((t) => t !== preferredType),
-    ];
+    const verifyTypes: Array<(typeof OTP_VERIFY_TYPES)[number]> = preferredType
+      ? [preferredType, ...OTP_VERIFY_TYPES.filter((t) => t !== preferredType)]
+      : [...OTP_VERIFY_TYPES];
 
     let verifyData: any = null;
     let lastError: any = null;
