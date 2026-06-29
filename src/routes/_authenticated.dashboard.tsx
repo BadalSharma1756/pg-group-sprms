@@ -8,6 +8,8 @@ import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Bu
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
 import { ExportMenu } from "@/components/export-menu";
 import { useScopedPlantIds, useScope } from "@/lib/scope";
+import { Link } from "@tanstack/react-router";
+import { fmtDate } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — SS Pipe ERP" }] }),
@@ -115,6 +117,26 @@ function Dashboard() {
       return (await q).data ?? [];
     },
   });
+  const { data: pendingProd } = useQuery({
+    queryKey: ["pending-prod-list", plantIds.join(",")],
+    queryFn: async () => {
+      let q = supabase.from("production_entries")
+        .select("id,entry_no,entry_date,quantity,plants(code),products(code,name)")
+        .eq("status","pending").order("entry_date",{ascending:false}).limit(8);
+      if (plantIds.length) q = q.in("plant_id", plantIds);
+      return (await q).data ?? [];
+    },
+  });
+  const { data: pendingPur } = useQuery({
+    queryKey: ["pending-pur-list", plantIds.join(",")],
+    queryFn: async () => {
+      let q = supabase.from("purchase_orders")
+        .select("id,po_no,po_date,quantity,total_amount,plants(code),materials(code,name),suppliers(name)")
+        .eq("status","pending").order("po_date",{ascending:false}).limit(8);
+      if (plantIds.length) q = q.in("plant_id", plantIds);
+      return (await q).data ?? [];
+    },
+  });
   const { locations, filteredPlants, locationId, plantId } = useScope();
   const locName = locations.find((l) => l.id === locationId)?.name ?? "All Locations";
   const plantName = filteredPlants.find((p) => p.id === plantId)?.name ?? "All Plants";
@@ -202,6 +224,57 @@ function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        <div className="grid lg:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2"><ClipboardList className="size-4 text-primary"/>Production approvals pending</CardTitle>
+              <Link to="/production" className="text-xs text-primary hover:underline">Review →</Link>
+            </CardHeader>
+            <CardContent>
+              {(!pendingProd || pendingProd.length === 0) ? (
+                <div className="text-sm text-muted-foreground py-4 text-center">No pending production entries.</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="text-xs text-muted-foreground border-b"><tr><th className="text-left py-2">Entry</th><th className="text-left py-2">Date</th><th className="text-left py-2">Plant</th><th className="text-left py-2">Product</th><th className="text-right py-2">Qty</th></tr></thead>
+                  <tbody>{pendingProd.map((r:any)=>(
+                    <tr key={r.id} className="border-b last:border-b-0">
+                      <td className="py-2 font-mono text-xs">{r.entry_no}</td>
+                      <td className="py-2">{fmtDate(r.entry_date)}</td>
+                      <td className="py-2">{r.plants?.code ?? "—"}</td>
+                      <td className="py-2">{r.products ? `${r.products.code}` : "—"}</td>
+                      <td className="py-2 text-right tabular-nums">{fmtNum(r.quantity, 0)}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2"><Clock className="size-4 text-primary"/>Purchase orders pending</CardTitle>
+              <Link to="/purchase" className="text-xs text-primary hover:underline">Review →</Link>
+            </CardHeader>
+            <CardContent>
+              {(!pendingPur || pendingPur.length === 0) ? (
+                <div className="text-sm text-muted-foreground py-4 text-center">No pending purchase orders.</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="text-xs text-muted-foreground border-b"><tr><th className="text-left py-2">PO</th><th className="text-left py-2">Date</th><th className="text-left py-2">Supplier</th><th className="text-left py-2">Material</th><th className="text-right py-2">Amount</th></tr></thead>
+                  <tbody>{pendingPur.map((r:any)=>(
+                    <tr key={r.id} className="border-b last:border-b-0">
+                      <td className="py-2 font-mono text-xs">{r.po_no}</td>
+                      <td className="py-2">{fmtDate(r.po_date)}</td>
+                      <td className="py-2">{r.suppliers?.name ?? "—"}</td>
+                      <td className="py-2">{r.materials?.code ?? "—"}</td>
+                      <td className="py-2 text-right tabular-nums">₹ {fmtNum(r.total_amount, 2)}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </PageBody>
     </>
   );
