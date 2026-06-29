@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { ArrowLeft, ShieldAlert, Timer, Mail, KeyRound, ShieldCheck, Sparkles, Factory, Boxes, LineChart } from "lucide-react";
 import { logAuthEvent, checkLockout } from "@/lib/auth-events.functions";
-import { requestOtpEmail, verifyOtpEmail } from "@/lib/smtp-otp.functions";
+import { requestOtpEmail, verifyOtpEmail, devBypassSignIn } from "@/lib/smtp-otp.functions";
 import logo from "@/assets/pg-logo.png.asset.json";
 
 const OTP_EXPIRY_SEC = 10 * 60;
@@ -41,10 +41,35 @@ function AuthPage() {
   const check = useServerFn(checkLockout);
   const sendOtpSmtp = useServerFn(requestOtpEmail);
   const verifyOtpFn = useServerFn(verifyOtpEmail);
+  const devBypass = useServerFn(devBypassSignIn);
+  const [bypassError, setBypassError] = useState<string | null>(null);
 
   useEffect(() => {
     if (session) navigate({ to: "/dashboard", replace: true });
   }, [session, navigate]);
+
+  // TEMP: auto sign-in without OTP. Remove this effect (and devBypassSignIn)
+  // to restore the normal OTP flow.
+  useEffect(() => {
+    if (session) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res: any = await devBypass({ data: {} });
+        if (cancelled || !res?.ok) return;
+        const { error } = await supabase.auth.setSession({
+          access_token: res.access_token, refresh_token: res.refresh_token,
+        });
+        if (error) throw error;
+        toast.success(`Dev bypass: signed in as ${res.email}`);
+        navigate({ to: "/dashboard", replace: true });
+      } catch (e: any) {
+        setBypassError(e?.message ?? "Dev bypass failed");
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     timerRef.current = window.setInterval(() => {
