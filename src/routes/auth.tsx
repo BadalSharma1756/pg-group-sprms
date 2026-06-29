@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, ShieldAlert, Timer, Mail, KeyRound, ShieldCheck, Sparkles, Factory, Boxes, LineChart } from "lucide-react";
-import { logAuthEvent, checkLockout, recordOtpFailure } from "@/lib/auth-events.functions";
-import { requestOtpEmail } from "@/lib/smtp-otp.functions";
+import { logAuthEvent, checkLockout } from "@/lib/auth-events.functions";
+import { requestOtpEmail, verifyOtpEmail } from "@/lib/smtp-otp.functions";
 import logo from "@/assets/pg-logo.png.asset.json";
 
 const OTP_EXPIRY_SEC = 10 * 60;
@@ -39,8 +39,8 @@ function AuthPage() {
   const timerRef = useRef<number | null>(null);
   const logEvent = useServerFn(logAuthEvent);
   const check = useServerFn(checkLockout);
-  const recordFail = useServerFn(recordOtpFailure);
   const sendOtpSmtp = useServerFn(requestOtpEmail);
+  const verifyOtp = useServerFn(verifyOtpEmail);
 
   useEffect(() => {
     if (session) navigate({ to: "/dashboard", replace: true });
@@ -96,22 +96,24 @@ function AuthPage() {
     e.preventDefault();
     if (expiresIn === 0) { toast.error("OTP expired — please request a new one"); return; }
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email, token: otp.trim(), type: "magiclink",
-    });
-    setBusy(false);
-    if (error) {
-      const res: any = await recordFail({ data: { email, message: error.message } });
+    const res: any = await verifyOtp({ data: { email, token: otp.trim() } });
+    if (!res?.ok) {
+      setBusy(false);
       if (res?.locked) {
-        setLockedUntil(Date.now() + res.lockout_minutes * 60_000);
-        toast.error(`Too many failed attempts. Locked for ${res.lockout_minutes} minutes.`);
+        const mins = res.lockout_minutes ?? 15;
+        setLockedUntil(Date.now() + mins * 60_000);
+        toast.error(`Too many failed attempts. Locked for ${mins} minutes.`);
       } else {
         const remaining = Math.max(0, (res?.threshold ?? 5) - (res?.failed_count ?? 0));
-        toast.error(`${error.message} — ${remaining} attempt(s) left`);
+        toast.error(`${res?.message ?? "Invalid OTP"} — ${remaining} attempt(s) left`);
       }
       return;
     }
-    await logEvent({ data: { email, event_type: "otp_verified", success: true } });
+    const { error: sErr } = await supabase.auth.setSession({
+      access_token: res.access_token, refresh_token: res.refresh_token,
+    });
+    setBusy(false);
+    if (sErr) { toast.error(sErr.message); return; }
     toast.success("Welcome back");
     navigate({ to: "/dashboard" });
   }
