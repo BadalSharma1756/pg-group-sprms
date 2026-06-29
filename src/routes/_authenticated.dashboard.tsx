@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmtNum } from "@/lib/format";
-import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2 } from "lucide-react";
+import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2, ClipboardList, Clock } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
 import { ExportMenu } from "@/components/export-menu";
 import { useScopedPlantIds, useScope } from "@/lib/scope";
@@ -33,6 +33,11 @@ function useKpi(plantIds: string[]) {
         supabase.from("v_current_stock").select("current_stock"),
         supabase.from("v_current_stock").select("material_id", { count: "exact", head: true }).eq("is_low", true),
       ]);
+      const [pendProd, pendPur] = await Promise.all([
+        inPlants(supabase.from("production_entries").select("id", { count: "exact", head: true }).eq("status", "pending")),
+        inPlants(supabase.from("purchase_orders").select("id,pending_qty", { count: "exact" }).eq("status", "pending")),
+      ]);
+      const pendingPurchaseQty = ((pendPur.data ?? []) as any[]).reduce((a, r) => a + Number(r.pending_qty || 0), 0);
       const todaysConsumption = ((prod.data ?? []) as any[]).reduce((a, r) => a + Number(r.total_meter_consumed || 0), 0);
       const todaysPurchaseAmt = ((pur.data ?? []) as any[]).reduce((a, r) => a + Number(r.total_amount || 0), 0);
       const currentStock = ((stock.data ?? []) as any[]).reduce((a, r) => a + Number(r.current_stock || 0), 0);
@@ -42,6 +47,9 @@ function useKpi(plantIds: string[]) {
         todaysPurchaseAmt,
         currentStock,
         lowStock: low.count ?? 0,
+        pendingApprovals: (pendProd.count ?? 0) + (pendPur.count ?? 0),
+        pendingPurchaseOrders: pendPur.count ?? 0,
+        pendingPurchaseQty,
         materials: mat.count ?? 0,
         products: prods.count ?? 0,
         suppliers: sup.count ?? 0,
@@ -99,6 +107,14 @@ function Dashboard() {
   const plantIds = useScopedPlantIds();
   const { data: k } = useKpi(plantIds);
   const { data: chart } = useCharts(plantIds);
+  const { data: lowList } = useQuery({
+    queryKey: ["low-stock-list", plantIds.join(",")],
+    queryFn: async () => {
+      let q = supabase.from("v_current_stock").select("*").eq("is_low", true).order("current_stock").limit(10);
+      if (plantIds.length) q = q.in("plant_id", plantIds);
+      return (await q).data ?? [];
+    },
+  });
   const { locations, filteredPlants, locationId, plantId } = useScope();
   const locName = locations.find((l) => l.id === locationId)?.name ?? "All Locations";
   const plantName = filteredPlants.find((p) => p.id === plantId)?.name ?? "All Plants";
@@ -113,6 +129,9 @@ function Dashboard() {
               { label:"Today's Purchase Value (₹)", value: k.todaysPurchaseAmt },
               { label:"Current Stock", value: k.currentStock },
               { label:"Low Stock Items", value: k.lowStock },
+              { label:"Pending Approvals", value: k.pendingApprovals },
+              { label:"Pending Purchase Orders", value: k.pendingPurchaseOrders },
+              { label:"Pending Purchase Qty", value: k.pendingPurchaseQty },
               { label:"Products", value: k.products },
               { label:"Materials", value: k.materials },
               { label:"Suppliers", value: k.suppliers },
@@ -129,6 +148,8 @@ function Dashboard() {
           <Kpi icon={Boxes} label="Today's Consumption (m)" value={fmtNum(k?.todaysConsumption)} />
           <Kpi icon={ShoppingCart} label="Today's Purchase Value" value={"₹ " + fmtNum(k?.todaysPurchaseAmt)} />
           <Kpi icon={AlertTriangle} label="Low Stock Items" value={fmtNum(k?.lowStock, 0)} tone={k && k.lowStock > 0 ? "warn" : "ok"} />
+          <Kpi icon={ClipboardList} label="Pending Approvals" value={fmtNum(k?.pendingApprovals, 0)} tone={k && k.pendingApprovals > 0 ? "warn" : "ok"} />
+          <Kpi icon={Clock} label="Pending Purchase Qty" value={fmtNum(k?.pendingPurchaseQty)} hint={`${k?.pendingPurchaseOrders ?? 0} open PO(s)`} />
           <Kpi icon={Package} label="Products" value={fmtNum(k?.products, 0)} />
           <Kpi icon={Wrench} label="Materials" value={fmtNum(k?.materials, 0)} />
           <Kpi icon={Truck} label="Suppliers" value={fmtNum(k?.suppliers, 0)} />
@@ -153,6 +174,34 @@ function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="size-4 text-destructive"/>Low stock alerts (top 10)</CardTitle></CardHeader>
+          <CardContent>
+            {(!lowList || lowList.length === 0) ? (
+              <div className="text-sm text-muted-foreground py-4 text-center">All materials are above reorder level.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs text-muted-foreground border-b">
+                    <tr><th className="text-left py-2 px-2">Material</th><th className="text-left py-2 px-2">Plant</th><th className="text-right py-2 px-2">Current</th><th className="text-right py-2 px-2">Reorder</th><th className="text-right py-2 px-2">Shortage</th></tr>
+                  </thead>
+                  <tbody>
+                    {lowList.map((r:any, i:number) => (
+                      <tr key={i} className="border-b last:border-b-0">
+                        <td className="py-2 px-2 font-medium">{r.material_code} — {r.material_name}</td>
+                        <td className="py-2 px-2">{r.plant_code}</td>
+                        <td className="py-2 px-2 text-right tabular-nums text-destructive font-semibold">{fmtNum(r.current_stock, 3)}</td>
+                        <td className="py-2 px-2 text-right tabular-nums">{fmtNum(r.reorder_level, 3)}</td>
+                        <td className="py-2 px-2 text-right tabular-nums">{fmtNum(Number(r.reorder_level) - Number(r.current_stock), 3)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </PageBody>
     </>
   );

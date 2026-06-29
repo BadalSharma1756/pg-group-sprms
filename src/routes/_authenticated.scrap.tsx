@@ -24,13 +24,13 @@ function Page() {
   const { data: depts } = useQuery({ queryKey:["dept-lite-sc"], queryFn: async () => (await supabase.from("departments").select("id,code,name,plant_id")).data });
 
   const [open,setOpen]=useState(false);
-  const [f,setF]=useState({ scrap_date:new Date().toISOString().slice(0,10), material_id:"", plant_id:"", department_id:"", quantity:0, reason:"", recovery_value:0 });
+  const [f,setF]=useState({ scrap_date:new Date().toISOString().slice(0,10), material_id:"", plant_id:"", department_id:"", quantity:0, reason:"", recovery_value:0, operator:"" });
   const filteredDepts = (depts ?? []).filter((d:any)=> !f.plant_id || d.plant_id===f.plant_id);
 
   const create = useMutation({
     mutationFn: async () => { const { error } = await supabase.from("scrap_entries").insert(f); if (error) throw error; },
     onSuccess: () => { toast.success("Scrap booked — inventory OUT posted"); setOpen(false);
-      setF({ scrap_date:new Date().toISOString().slice(0,10), material_id:"", plant_id:"", department_id:"", quantity:0, reason:"", recovery_value:0 });
+      setF({ scrap_date:new Date().toISOString().slice(0,10), material_id:"", plant_id:"", department_id:"", quantity:0, reason:"", recovery_value:0, operator:"" });
       qc.invalidateQueries({queryKey:["scrap"]});
     },
     onError:(e:any)=>toast.error(e.message),
@@ -72,7 +72,10 @@ function Page() {
                   <div><Label>Quantity</Label><Input type="number" step="0.001" value={f.quantity} onChange={(e)=>setF({...f, quantity:Number(e.target.value)})}/></div>
                   <div><Label>Recovery value</Label><Input type="number" step="0.01" value={f.recovery_value} onChange={(e)=>setF({...f, recovery_value:Number(e.target.value)})}/></div>
                 </div>
-                <div><Label>Reason</Label><Input value={f.reason} onChange={(e)=>setF({...f, reason:e.target.value})}/></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Operator</Label><Input value={f.operator} onChange={(e)=>setF({...f, operator:e.target.value})} placeholder="Operator name"/></div>
+                  <div><Label>Reason</Label><Input value={f.reason} onChange={(e)=>setF({...f, reason:e.target.value})}/></div>
+                </div>
               </div>
               <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.material_id || !f.plant_id || !f.department_id || f.quantity<=0 || create.isPending}>Save</Button></DialogFooter>
             </DialogContent>
@@ -86,6 +89,7 @@ function Page() {
           { header:"Plant / Dept", cell:(r:any)=> `${r.plants?.code ?? "—"} / ${r.departments?.code ?? "—"}` },
           { header:"Qty", cell:(r:any)=> fmtNum(r.quantity,3) },
           { header:"Recovery", cell:(r:any)=> fmtCurrency(r.recovery_value) },
+          { header:"Operator", cell:(r:any)=> r.operator ?? "—" },
           { header:"Reason", cell:(r:any)=> r.reason ?? "—" },
         ]} />
       </PageBody>
