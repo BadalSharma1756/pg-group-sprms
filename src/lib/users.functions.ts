@@ -4,7 +4,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const CreateInput = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
   full_name: z.string().optional(),
   role: z.enum([
     "super_admin","plant_admin","production_manager","production_operator",
@@ -28,9 +27,13 @@ export const createUser = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertSuperAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Passwordless: generate a random unguessable password the user never sees.
+    // Users sign in via email OTP (one-time code) — no password needed.
+    const randomPassword =
+      crypto.randomUUID() + "-" + crypto.randomUUID().toUpperCase() + "!aZ9";
     const created = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
-      password: data.password,
+      password: randomPassword,
       email_confirm: true,
       user_metadata: { full_name: data.full_name ?? "" },
     });

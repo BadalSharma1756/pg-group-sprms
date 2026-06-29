@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Factory } from "lucide-react";
+import { Factory, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — SS Pipe ERP" }] }),
@@ -19,33 +18,37 @@ function AuthPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [otp, setOtp] = useState("");
 
   useEffect(() => {
     if (session) navigate({ to: "/dashboard", replace: true });
   }, [session, navigate]);
 
-  async function signIn(e: React.FormEvent) {
+  async function sendOtp(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else { toast.success("Welcome back"); navigate({ to: "/dashboard" }); }
-  }
-
-  async function signUp(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } },
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
     });
     setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("Account created — you can sign in now.");
+    if (error) { toast.error(error.message); return; }
+    toast.success(`OTP sent to ${email}`);
+    setStep("otp");
+  }
+
+  async function verifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email, token: otp.trim(), type: "email",
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Welcome back");
+    navigate({ to: "/dashboard" });
   }
 
   return (
@@ -68,27 +71,55 @@ function AuthPage() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Sign in to your workspace</CardTitle>
-            <CardDescription>The first account becomes Super Admin automatically.</CardDescription>
+            <CardDescription>
+              {step === "email"
+                ? "Enter your registered email — we'll send you a one-time code (OTP)."
+                : `Enter the 6-digit code sent to ${email}.`}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin">
-              <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="signin">Sign in</TabsTrigger><TabsTrigger value="signup">Create account</TabsTrigger></TabsList>
-              <TabsContent value="signin">
-                <form onSubmit={signIn} className="space-y-4 pt-4">
-                  <div><Label htmlFor="e">Email</Label><Input id="e" type="email" required value={email} onChange={(e)=>setEmail(e.target.value)} /></div>
-                  <div><Label htmlFor="p">Password</Label><Input id="p" type="password" required value={password} onChange={(e)=>setPassword(e.target.value)} /></div>
-                  <Button type="submit" className="w-full" disabled={busy}>{busy?"Signing in…":"Sign in"}</Button>
-                </form>
-              </TabsContent>
-              <TabsContent value="signup">
-                <form onSubmit={signUp} className="space-y-4 pt-4">
-                  <div><Label htmlFor="n">Full name</Label><Input id="n" required value={fullName} onChange={(e)=>setFullName(e.target.value)} /></div>
-                  <div><Label htmlFor="e2">Email</Label><Input id="e2" type="email" required value={email} onChange={(e)=>setEmail(e.target.value)} /></div>
-                  <div><Label htmlFor="p2">Password</Label><Input id="p2" type="password" required minLength={6} value={password} onChange={(e)=>setPassword(e.target.value)} /></div>
-                  <Button type="submit" className="w-full" disabled={busy}>{busy?"Creating…":"Create account"}</Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+            {step === "email" ? (
+              <form onSubmit={sendOtp} className="space-y-4 pt-2">
+                <div>
+                  <Label htmlFor="e">Email</Label>
+                  <Input id="e" type="email" required autoFocus value={email}
+                    onChange={(e)=>setEmail(e.target.value)} placeholder="you@company.com" />
+                </div>
+                <Button type="submit" className="w-full" disabled={busy || !email}>{busy?"Sending…":"Send OTP"}</Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Accounts are created by your Super Admin. No password required.
+                </p>
+              </form>
+            ) : (
+              <form onSubmit={verifyOtp} className="space-y-4 pt-2">
+                <div>
+                  <Label htmlFor="otp">One-time code</Label>
+                  <Input id="otp" inputMode="numeric" pattern="[0-9]*" required autoFocus
+                    value={otp} onChange={(e)=>setOtp(e.target.value)}
+                    placeholder="6-digit code" maxLength={6}
+                    className="tracking-[0.4em] text-center text-lg" />
+                </div>
+                <Button type="submit" className="w-full" disabled={busy || otp.length < 6}>
+                  {busy ? "Verifying…" : "Verify & sign in"}
+                </Button>
+                <div className="flex items-center justify-between text-xs">
+                  <button type="button"
+                    className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                    onClick={()=>{ setStep("email"); setOtp(""); }}>
+                    <ArrowLeft className="size-3"/> Change email
+                  </button>
+                  <button type="button" className="text-primary hover:underline" disabled={busy}
+                    onClick={async ()=>{
+                      setBusy(true);
+                      const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+                      setBusy(false);
+                      if (error) toast.error(error.message); else toast.success("New OTP sent");
+                    }}>
+                    Resend code
+                  </button>
+                </div>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
