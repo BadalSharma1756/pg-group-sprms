@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,50 @@ import { ArrowLeft, Factory, ShoppingCart, Trash2, ClipboardCheck, Boxes, Edit, 
 import { fmtDateTime } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const Route = createFileRoute("/_authenticated/audit/$plantId")({ component: Page });
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export const Route = createFileRoute("/_authenticated/audit/$plantId")({
+  component: Page,
+  beforeLoad: ({ params }) => {
+    if (!UUID_RE.test(params.plantId)) throw notFound();
+  },
+  loader: async ({ params }) => {
+    const { data, error } = await supabase
+      .from("plants").select("id,code,name,location").eq("id", params.plantId).maybeSingle();
+    if (error) throw error;
+    if (!data) throw notFound();
+    return { plant: data };
+  },
+  errorComponent: ({ error, reset }) => {
+    const router = useRouter();
+    return (
+      <div className="p-8 max-w-md mx-auto text-center">
+        <div className="size-12 mx-auto rounded-full bg-destructive/10 text-destructive grid place-items-center mb-3">
+          <AlertTriangle className="size-6"/>
+        </div>
+        <div className="font-medium">Couldn't load this plant's audit log.</div>
+        <div className="text-xs text-muted-foreground mt-1">{(error as any)?.message ?? "Unknown error"}</div>
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <Button size="sm" variant="outline" onClick={() => { router.invalidate(); reset(); }}><RefreshCw className="size-3.5 mr-1"/>Retry</Button>
+          <Link to="/audit"><Button size="sm" variant="ghost"><ArrowLeft className="size-3.5 mr-1"/>All plants</Button></Link>
+        </div>
+      </div>
+    );
+  },
+  notFoundComponent: () => {
+    const { plantId } = Route.useParams();
+    return (
+      <div className="p-8 max-w-md mx-auto text-center">
+        <div className="size-12 mx-auto rounded-full bg-muted grid place-items-center mb-3">
+          <Inbox className="size-6 text-muted-foreground"/>
+        </div>
+        <div className="font-medium">Plant not found.</div>
+        <div className="text-xs text-muted-foreground mt-1 break-all">No plant matches id <code>{plantId}</code>.</div>
+        <Link to="/audit"><Button size="sm" variant="outline" className="mt-3"><ArrowLeft className="size-3.5 mr-1"/>Back to all plants</Button></Link>
+      </div>
+    );
+  },
+});
 
 const tableIcon: Record<string, any> = {
   production_entries: Factory,
@@ -39,10 +82,7 @@ function Page() {
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [tableFilter, setTableFilter] = useState<string>("all");
 
-  const { data: plant } = useQuery({
-    queryKey:["plant", plantId],
-    queryFn: async () => (await supabase.from("plants").select("*").eq("id", plantId).single()).data,
-  });
+  const { plant } = Route.useLoaderData();
   const { data: depts } = useQuery({
     queryKey:["plant-depts", plantId],
     queryFn: async () => (await supabase.from("departments").select("id,code,name").eq("plant_id", plantId)).data,
