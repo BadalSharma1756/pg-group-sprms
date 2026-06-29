@@ -33,9 +33,9 @@ function useKpi(plantIds: string[]) {
         supabase.from("v_current_stock").select("current_stock"),
         supabase.from("v_current_stock").select("material_id", { count: "exact", head: true }).eq("is_low", true),
       ]);
-      const todaysConsumption = (prod.data ?? []).reduce((a, r) => a + Number(r.total_meter_consumed || 0), 0);
-      const todaysPurchaseAmt = (pur.data ?? []).reduce((a, r) => a + Number(r.total_amount || 0), 0);
-      const currentStock = (stock.data ?? []).reduce((a, r) => a + Number(r.current_stock || 0), 0);
+      const todaysConsumption = ((prod.data ?? []) as any[]).reduce((a, r) => a + Number(r.total_meter_consumed || 0), 0);
+      const todaysPurchaseAmt = ((pur.data ?? []) as any[]).reduce((a, r) => a + Number(r.total_amount || 0), 0);
+      const currentStock = ((stock.data ?? []) as any[]).reduce((a, r) => a + Number(r.current_stock || 0), 0);
       return {
         todaysProduction: (prod.data ?? []).length,
         todaysConsumption,
