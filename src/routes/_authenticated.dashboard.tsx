@@ -5,11 +5,13 @@ import { PageHeader, PageBody } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmtNum } from "@/lib/format";
 import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2, ClipboardList, Clock } from "lucide-react";
+import { Activity, Check, X, Plus, Edit, Trash2, ClipboardCheck } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
 import { ExportMenu } from "@/components/export-menu";
 import { useScopedPlantIds, useScope } from "@/lib/scope";
 import { Link } from "@tanstack/react-router";
-import { fmtDate } from "@/lib/format";
+import { fmtDate, fmtDateTime } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — SS Pipe ERP" }] }),
@@ -92,14 +94,14 @@ function useCharts(plantIds: string[]) {
 
 function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: string; value: string; hint?: string; tone?: "default" | "warn" | "ok" }) {
   return (
-    <Card className="relative overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-          <div className={`size-8 grid place-items-center rounded-md ${tone === "warn" ? "bg-destructive/10 text-destructive" : tone === "ok" ? "bg-[color:var(--color-success)]/10 text-[color:var(--color-success)]" : "bg-primary/10 text-primary"}`}><Icon className="size-4" /></div>
+    <Card className="relative overflow-hidden shrink-0 w-[180px] snap-start">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">{label}</div>
+          <div className={`size-7 grid place-items-center rounded-md shrink-0 ${tone === "warn" ? "bg-destructive/10 text-destructive" : tone === "ok" ? "bg-[color:var(--color-success)]/10 text-[color:var(--color-success)]" : "bg-primary/10 text-primary"}`}><Icon className="size-4" /></div>
         </div>
-        <div className="mt-3 text-2xl font-semibold tabular-nums">{value}</div>
-        {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
+        <div className="mt-2 text-xl font-semibold tabular-nums whitespace-nowrap">{value}</div>
+        {hint && <div className="mt-1 text-[10px] text-muted-foreground truncate">{hint}</div>}
       </CardContent>
     </Card>
   );
