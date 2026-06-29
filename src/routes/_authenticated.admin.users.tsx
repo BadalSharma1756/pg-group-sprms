@@ -74,14 +74,14 @@ function Inner() {
   });
 
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ email:"", password:"", full_name:"", role:"viewer", plant_ids:[] as string[] });
+  const [f, setF] = useState({ email:"", full_name:"", role:"viewer", plant_ids:[] as string[] });
 
   const mCreate = useMutation({
     mutationFn: async () => create({ data: f }),
     onSuccess: () => {
-      toast.success(`User created — ${f.email}`);
+      toast.success(`User created — they can sign in with an OTP sent to ${f.email}`);
       setOpen(false);
-      setF({ email:"", password:"", full_name:"", role:"viewer", plant_ids:[] });
+      setF({ email:"", full_name:"", role:"viewer", plant_ids:[] });
       qc.invalidateQueries({ queryKey:["admin-profiles"] });
       qc.invalidateQueries({ queryKey:["admin-roles"] });
       qc.invalidateQueries({ queryKey:["admin-user-plants"] });
@@ -123,7 +123,6 @@ function Inner() {
                   <div><Label>Full name</Label><Input value={f.full_name} onChange={(e)=>setF({...f, full_name:e.target.value})}/></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Password</Label><Input type="text" value={f.password} onChange={(e)=>setF({...f, password:e.target.value})} placeholder="min 8 chars"/></div>
                   <div><Label>Role</Label>
                     <Select value={f.role} onValueChange={(v)=>setF({...f, role:v})}>
                       <SelectTrigger><SelectValue/></SelectTrigger>
@@ -131,6 +130,9 @@ function Inner() {
                     </Select>
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  No password needed — the user will sign in by requesting a one-time code (OTP) sent to this email.
+                </p>
                 <div>
                   <Label>Plant access (leave empty = all, for admin roles)</Label>
                   <div className="mt-2 grid grid-cols-2 gap-2 max-h-40 overflow-auto rounded-md border p-3">
@@ -146,7 +148,7 @@ function Inner() {
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={()=>mCreate.mutate()} disabled={!f.email || f.password.length<8 || mCreate.isPending}>Create user</Button>
+                <Button onClick={()=>mCreate.mutate()} disabled={!f.email || mCreate.isPending}>Create user</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
