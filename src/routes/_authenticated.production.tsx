@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calculator, CheckCircle2 } from "lucide-react";
+import { Plus, Calculator, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum, fmtDate } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
+import { ExportMenu } from "@/components/export-menu";
+import { ExcelImport } from "@/components/excel-import";
 
 export const Route = createFileRoute("/_authenticated/production")({ component: Page });
 
@@ -67,10 +69,62 @@ function Page() {
     onError:(e:any)=>toast.error(e.message),
   });
 
+  const reject = useMutation({
+    mutationFn: async (id:string) => { const { error } = await supabase.from("production_entries").update({ status:"rejected" }).eq("id", id); if (error) throw error; },
+    onSuccess: () => { toast.success("Entry rejected"); qc.invalidateQueries({queryKey:["production"]}); },
+    onError:(e:any)=>toast.error(e.message),
+  });
+
+  const importRows = async (rows: Record<string, any>[]) => {
+    const errors: { row: number; msg: string }[] = [];
+    let ok = 0;
+    const prodByCode = new Map((products ?? []).map((p:any)=>[p.code, p]));
+    for (let i=0;i<rows.length;i++){
+      const r = rows[i];
+      const p:any = prodByCode.get(String(r.product_code).trim());
+      if (!p) { errors.push({ row: i+2, msg: `Unknown product_code ${r.product_code}` }); continue; }
+      const qty = Number(r.quantity);
+      if (!isFinite(qty) || qty <= 0) { errors.push({ row: i+2, msg: "quantity must be > 0" }); continue; }
+      const { error } = await supabase.from("production_entries").insert({
+        entry_date: r.entry_date, shift: r.shift ?? "general", product_id: p.id,
+        plant_id: p.plant_id, department_id: p.department_id, material_id: p.material_id,
+        quantity: qty, remarks: r.remarks ?? null,
+      });
+      if (error) errors.push({ row: i+2, msg: error.message }); else ok++;
+    }
+    qc.invalidateQueries({queryKey:["production"]});
+    return { ok, errors };
+  };
+
   return (
     <>
       <PageHeader title="Production" subtitle="Daily shift-wise production booking with automatic raw-material consumption"
         actions={
+          <div className="flex items-center gap-2">
+          <ExportMenu filename="production_entries" title="Production Entries"
+            rows={data ?? []}
+            columns={[
+              { header:"Date", accessor:(r:any)=>r.entry_date },
+              { header:"Shift", accessor:(r:any)=>r.shift },
+              { header:"Product", accessor:(r:any)=> r.products ? `${r.products.code} ${r.products.name}` : "" },
+              { header:"Plant", accessor:(r:any)=>r.plants?.code ?? "" },
+              { header:"Dept", accessor:(r:any)=>r.departments?.code ?? "" },
+              { header:"Qty", accessor:(r:any)=>r.quantity },
+              { header:"Meters", accessor:(r:any)=>r.total_meter_consumed },
+              { header:"6m pipes", accessor:(r:any)=>r.pipes_consumed_6m },
+              { header:"4m pipes", accessor:(r:any)=>r.pipes_consumed_4m },
+              { header:"Status", accessor:(r:any)=>r.status },
+            ]} />
+          <ExcelImport templateName="production_template"
+            fields={[
+              { key:"entry_date", label:"entry_date", required:true, type:"date" },
+              { key:"shift", label:"shift" },
+              { key:"product_code", label:"product_code", required:true },
+              { key:"quantity", label:"quantity", required:true, type:"number" },
+              { key:"remarks", label:"remarks" },
+            ]}
+            sample={[new Date().toISOString().slice(0,10), "morning", "P-001", 10, "sample"]}
+            onImport={importRows} />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="size-4 mr-1"/>New entry</Button></DialogTrigger>
             <DialogContent>
@@ -112,6 +166,7 @@ function Page() {
               <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.product_id || f.quantity<=0 || create.isPending}>Save (draft)</Button></DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         } />
       <PageBody>
         <DataTable rows={data ?? undefined} columns={[
@@ -123,9 +178,12 @@ function Page() {
           { header:"Meters", cell:(r:any)=> fmtNum(r.total_meter_consumed,3) },
           { header:"6 m / 4 m", cell:(r:any)=> `${fmtNum(r.pipes_consumed_6m,2)} / ${fmtNum(r.pipes_consumed_4m,2)}` },
           { header:"Status", cell:(r:any)=> <Badge variant={r.status==="approved"?"default":r.status==="rejected"?"destructive":"secondary"} className="capitalize">{r.status}</Badge> },
-          { header:"", cell:(r:any)=> canApprove && r.status!=="approved"
-            ? <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
-            : null },
+          { header:"", cell:(r:any)=> canApprove && r.status!=="approved" && r.status!=="rejected" ? (
+            <div className="flex gap-1">
+              <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
+              <Button size="sm" variant="ghost" className="text-destructive" onClick={()=>reject.mutate(r.id)}><XCircle className="size-4 mr-1"/>Reject</Button>
+            </div>
+          ) : null },
         ]} />
       </PageBody>
     </>
