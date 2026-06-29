@@ -6,6 +6,8 @@ import { ScopeProvider } from "@/lib/scope";
 import { ScopeSwitcher } from "@/components/scope-switcher";
 import { Loader2, Menu } from "lucide-react";
 import logo from "@/assets/pg-logo.png.asset.json";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { UserMenu } from "@/components/user-menu";
 
 export const Route = createFileRoute("/_authenticated")({
   component: ProtectedLayout,
@@ -60,7 +62,12 @@ function LayoutInner() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("ss-erp-sidebar-collapsed") === "1";
   });
+  const [mobileOpen, setMobileOpen] = useState(false);
   const toggle = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+      setMobileOpen((v) => !v);
+      return;
+    }
     setCollapsed((c) => {
       const next = !c;
       if (typeof window !== "undefined") {
@@ -75,7 +82,7 @@ function LayoutInner() {
         <button
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="size-9 grid place-items-center rounded-md hover:bg-accent text-muted-foreground"
+          className="size-9 grid place-items-center rounded-md hover:bg-accent text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Menu className="size-5" />
         </button>
@@ -90,9 +97,20 @@ function LayoutInner() {
         </div>
         <div className="flex-1" />
         <ScopeSwitcher />
+        <UserMenu />
       </header>
       <div className="flex-1 flex min-h-0">
-        <AppSidebar collapsed={collapsed} />
+        <div className="hidden md:block">
+          <AppSidebar collapsed={collapsed} />
+        </div>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="p-0 w-[18rem] md:hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left duration-300">
+            <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+            <div onClick={() => setMobileOpen(false)}>
+              <AppSidebar collapsed={false} />
+            </div>
+          </SheetContent>
+        </Sheet>
         <main className="flex-1 min-w-0">
           <Outlet />
         </main>
