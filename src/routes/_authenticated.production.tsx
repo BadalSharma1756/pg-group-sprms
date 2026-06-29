@@ -81,7 +81,7 @@ function Page() {
       const { error } = await supabase.from("production_entries").insert({
         entry_date: r.entry_date, shift: r.shift ?? "general", product_id: p.id,
         plant_id: p.plant_id, department_id: p.department_id, material_id: p.material_id,
-        quantity: qty, remarks: r.remarks ?? null,
+        quantity: qty, remarks: r.remarks ?? null, status: "approved",
       });
       if (error) errors.push({ row: i+2, msg: error.message }); else ok++;
     }
@@ -164,7 +164,7 @@ function Page() {
                   </div>
                 )}
               </div>
-              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.product_id || f.quantity<=0 || create.isPending}>Save (draft)</Button></DialogFooter>
+              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.product_id || f.quantity<=0 || create.isPending}>Save</Button></DialogFooter>
             </DialogContent>
           </Dialog>
           </div>
@@ -178,13 +178,6 @@ function Page() {
           { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
           { header:"Meters", cell:(r:any)=> fmtNum(r.total_meter_consumed,3) },
           { header:"6 m / 4 m", cell:(r:any)=> `${fmtNum(r.pipes_consumed_6m,2)} / ${fmtNum(r.pipes_consumed_4m,2)}` },
-          { header:"Status", cell:(r:any)=> <Badge variant={r.status==="approved"?"default":r.status==="rejected"?"destructive":"secondary"} className="capitalize">{r.status}</Badge> },
-          { header:"", cell:(r:any)=> canApprove && r.status!=="approved" && r.status!=="rejected" ? (
-            <div className="flex gap-1">
-              <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
-              <Button size="sm" variant="ghost" className="text-destructive" onClick={()=>reject.mutate(r.id)}><XCircle className="size-4 mr-1"/>Reject</Button>
-            </div>
-          ) : null },
         ]} />
       </PageBody>
     </>
