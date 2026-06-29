@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExportMenu } from "@/components/export-menu";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
+import { fmtNum } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/reports")({ component: Page });
 
@@ -22,18 +23,28 @@ function Page() {
   const { data: plants } = useQuery({ queryKey:["plants-lite-rpt"], queryFn: async () => (await supabase.from("plants").select("id,code,name").eq("status","active")).data });
 
   const { data: prod } = useQuery({ queryKey:["rpt-prod",from,to,plantId], queryFn: async () => {
-    let q = supabase.from("production_entries").select("entry_date,quantity,total_meter_consumed,plant_id,plants(code)").gte("entry_date",from).lte("entry_date",to).order("entry_date").limit(2000);
+    let q = supabase.from("production_entries").select("entry_date,quantity,total_meter_consumed,plant_id,department_id,product_id,plants(code),departments(code,name),products(code,name)").gte("entry_date",from).lte("entry_date",to).order("entry_date").limit(5000);
     if (plantId!=="all") q = q.eq("plant_id", plantId);
     return (await q).data ?? [];
   }});
   const { data: pur } = useQuery({ queryKey:["rpt-pur",from,to,plantId], queryFn: async () => {
-    let q = supabase.from("purchase_orders").select("po_date,total_amount,quantity,plant_id,plants(code)").gte("po_date",from).lte("po_date",to).order("po_date").limit(2000);
+    let q = supabase.from("purchase_orders").select("po_date,total_amount,quantity,plant_id,material_id,plants(code),materials(code,name)").gte("po_date",from).lte("po_date",to).order("po_date").limit(5000);
+    if (plantId!=="all") q = q.eq("plant_id", plantId);
+    return (await q).data ?? [];
+  }});
+  const { data: cons } = useQuery({ queryKey:["rpt-cons",from,to,plantId], queryFn: async () => {
+    let q = supabase.from("inventory_transactions").select("txn_date,qty_out,material_id,plant_id,materials(code,name),plants(code)").eq("txn_type","production_out").gte("txn_date",from).lte("txn_date",to+"T23:59:59").limit(10000);
     if (plantId!=="all") q = q.eq("plant_id", plantId);
     return (await q).data ?? [];
   }});
 
   const prodSeries = aggregate((prod ?? []) as any[], "entry_date", ["quantity","total_meter_consumed"]);
   const purSeries  = aggregate((pur  ?? []) as any[], "po_date",   ["quantity","total_amount"]);
+  const topProducts = rank((prod ?? []) as any[], (r:any)=> r.products ? `${r.products.code} — ${r.products.name}` : "—", "quantity").slice(0,10);
+  const topMaterials = rank((cons ?? []) as any[], (r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—", "qty_out").slice(0,10);
+  const byPlant = rank((prod ?? []) as any[], (r:any)=> r.plants?.code ?? "—", "total_meter_consumed");
+  const byDept  = rank((prod ?? []) as any[], (r:any)=> r.departments ? `${r.departments.code}` : "—", "total_meter_consumed");
+  const PIE_COLORS = ["hsl(var(--primary))","hsl(var(--chart-2))","hsl(var(--chart-3))","hsl(var(--chart-4))","hsl(var(--chart-5))","hsl(var(--accent))"];
 
   return (
     <>
@@ -99,6 +110,65 @@ function Page() {
             </CardContent>
           </Card>
         </div>
+
+        <div className="grid lg:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Plant-wise consumption (meters)</CardTitle></CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={byPlant} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
+                  <XAxis type="number" fontSize={11}/><YAxis type="category" dataKey="key" width={80} fontSize={11}/><Tooltip/>
+                  <Bar dataKey="value" fill="hsl(var(--primary))"/>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Department-wise consumption</CardTitle></CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={byDept} dataKey="value" nameKey="key" outerRadius={90} label={(e:any)=>e.key}>
+                    {byDept.map((_,i)=> <Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
+                  </Pie>
+                  <Tooltip/><Legend/>
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm">Top 10 products (by units produced)</CardTitle>
+              <ExportMenu filename={`top_products_${from}_${to}`} title="Top Products" rows={topProducts}
+                columns={[{header:"Product", accessor:(r:any)=>r.key},{header:"Units", accessor:(r:any)=>r.value}]} />
+            </CardHeader>
+            <CardContent>
+              <table className="w-full text-sm">
+                <thead className="text-xs text-muted-foreground border-b"><tr><th className="text-left py-2">#</th><th className="text-left py-2">Product</th><th className="text-right py-2">Units</th></tr></thead>
+                <tbody>{topProducts.map((r,i)=>(<tr key={i} className="border-b last:border-b-0"><td className="py-2 text-muted-foreground">{i+1}</td><td className="py-2 font-medium">{r.key}</td><td className="py-2 text-right tabular-nums">{fmtNum(r.value,2)}</td></tr>))}
+                {topProducts.length===0 && <tr><td colSpan={3} className="py-6 text-center text-muted-foreground">No production data</td></tr>}</tbody>
+              </table>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm">Top 10 materials consumed</CardTitle>
+              <ExportMenu filename={`top_materials_${from}_${to}`} title="Top Materials" rows={topMaterials}
+                columns={[{header:"Material", accessor:(r:any)=>r.key},{header:"Qty out", accessor:(r:any)=>r.value}]} />
+            </CardHeader>
+            <CardContent>
+              <table className="w-full text-sm">
+                <thead className="text-xs text-muted-foreground border-b"><tr><th className="text-left py-2">#</th><th className="text-left py-2">Material</th><th className="text-right py-2">Qty out</th></tr></thead>
+                <tbody>{topMaterials.map((r,i)=>(<tr key={i} className="border-b last:border-b-0"><td className="py-2 text-muted-foreground">{i+1}</td><td className="py-2 font-medium">{r.key}</td><td className="py-2 text-right tabular-nums">{fmtNum(r.value,3)}</td></tr>))}
+                {topMaterials.length===0 && <tr><td colSpan={3} className="py-6 text-center text-muted-foreground">No consumption data</td></tr>}</tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
       </PageBody>
     </>
   );
@@ -114,4 +184,13 @@ function aggregate(rows: any[], dateKey: string, fields: string[]) {
     map.set(k, cur);
   }
   return Array.from(map.values()).sort((a,b)=> a.date.localeCompare(b.date));
+}
+
+function rank(rows: any[], keyFn: (r:any)=>string, valField: string) {
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    const k = keyFn(r); if (!k) continue;
+    map.set(k, (map.get(k) ?? 0) + Number(r[valField] ?? 0));
+  }
+  return Array.from(map.entries()).map(([key,value])=>({key,value})).sort((a,b)=> b.value - a.value);
 }
