@@ -12,7 +12,10 @@ export function DiagnosticsPanel() {
   const [, force] = useState(0);
   const [lastGet, setLastGet] = useState<{ ok: boolean; ms: number; at: string; err?: string } | null>(null);
 
-  useEffect(() => diagnostics.subscribe(() => force((x) => x + 1)), []);
+  useEffect(() => {
+    const unsub = diagnostics.subscribe(() => force((x) => x + 1));
+    return () => { unsub; };
+  }, []);
 
   const refresh = async () => {
     const t0 = performance.now();
