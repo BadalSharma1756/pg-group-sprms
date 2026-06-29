@@ -1,12 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Factory, ShoppingCart, Boxes, ClipboardCheck, Trash2, BarChart3,
-  Building2, Layers, Truck, Ruler, Package, Wrench, LogOut, History,
+  Building2, Layers, Truck, Ruler, Package, Wrench, LogOut, History, Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/pg-logo.png.asset.json";
 
-const groups: { label: string; items: { to: string; icon: any; label: string }[] }[] = [
+const baseGroups: { label: string; items: { to: string; icon: any; label: string }[] }[] = [
   { label: "Overview", items: [{ to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" }] },
   { label: "Operations", items: [
     { to: "/production", icon: Factory, label: "Production" },
@@ -31,7 +32,10 @@ const groups: { label: string; items: { to: string; icon: any; label: string }[]
 
 export function AppSidebar({ collapsed }: { collapsed: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { user, signOut, roles } = useAuth();
+  const { user, signOut, roles, hasAny } = useAuth();
+  const groups = hasAny(["super_admin"])
+    ? [...baseGroups, { label: "Administration", items: [{ to: "/admin/users", icon: Users, label: "User Management" }] }]
+    : baseGroups;
 
   return (
     <aside
@@ -41,11 +45,13 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
       )}
     >
       <div className={cn("flex items-center gap-3 border-b border-sidebar-border h-16", collapsed ? "justify-center px-2" : "px-5")}>
-        <div className="size-9 rounded-md bg-primary grid place-items-center shrink-0"><Factory className="size-5" /></div>
+        <div className="size-9 rounded-md bg-white grid place-items-center shrink-0 p-1 ring-1 ring-sidebar-border">
+          <img src={logo.url} alt="PG" className="size-full object-contain" />
+        </div>
         {!collapsed && (
           <div className="min-w-0">
-            <div className="font-semibold tracking-tight text-sm truncate">SS Pipe ERP</div>
-            <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">MES · v1.0</div>
+            <div className="font-semibold tracking-tight text-sm truncate">SPRMS</div>
+            <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">SS Pipe Ricco · v1.0</div>
           </div>
         )}
       </div>
