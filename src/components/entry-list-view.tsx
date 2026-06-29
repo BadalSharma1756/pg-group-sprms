@@ -131,7 +131,7 @@ export function EntryListView<T extends { id: string | number }>({
               ) : filtered.length === 0 ? (
                 <TableRow><TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground py-10">{empty}</TableCell></TableRow>
               ) : filtered.map((r) => (
-                <TableRow key={r.id}>
+                <TableRow key={r.id} data-row-id={String(r.id)}>
                   {columns.map((c, i) => <TableCell key={i} className={cn("tabular-nums", c.className)}>{c.cell(r)}</TableCell>)}
                   <TableCell className="text-right">
                     <Button size="sm" variant="ghost" onClick={() => openEntry(r)} className="h-7 px-2 text-primary hover:text-primary" data-testid="entry-view-btn">
@@ -152,7 +152,7 @@ export function EntryListView<T extends { id: string | number }>({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {filtered.map((r) => (
-                <div key={r.id} className="rounded-lg border bg-card p-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <div key={r.id} data-row-id={String(r.id)} className="rounded-lg border bg-card p-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
                   <div className="space-y-1.5">
                     {columns.slice(0, 5).map((c, i) => (
                       <div key={i} className={cn("flex items-start justify-between gap-2 text-xs", i === 0 && "pb-1.5 mb-1 border-b border-border/60")}>
