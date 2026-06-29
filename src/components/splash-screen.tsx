@@ -7,11 +7,14 @@ export function SplashScreen() {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem("sprms-splash-shown")) return;
     setShow(true);
-    const t = setTimeout(() => {
-      sessionStorage.setItem("sprms-splash-shown", "1");
+    const dismiss = () => {
+      try { sessionStorage.setItem("sprms-splash-shown", "1"); } catch {}
       setShow(false);
-    }, 2400);
-    return () => clearTimeout(t);
+    };
+    const t = setTimeout(dismiss, 2200);
+    // Hard safety net — guarantee dismissal even if main timer is throttled
+    const hard = setTimeout(dismiss, 5000);
+    return () => { clearTimeout(t); clearTimeout(hard); };
   }, []);
   if (!show) return null;
   return (
