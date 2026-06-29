@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExportMenu } from "@/components/export-menu";
-import { ArrowLeft, Factory, ShoppingCart, Trash2, ClipboardCheck, Boxes, Edit, Plus, X, Check } from "lucide-react";
+import { ArrowLeft, Factory, ShoppingCart, Trash2, ClipboardCheck, Boxes, Edit, Plus, X, Check, Loader2 } from "lucide-react";
 import { fmtDateTime } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/audit/$plantId")({ component: Page });
@@ -47,7 +47,7 @@ function Page() {
     queryFn: async () => (await supabase.from("departments").select("id,code,name").eq("plant_id", plantId)).data,
   });
 
-  const { data: logs } = useQuery({
+  const { data: logs, isLoading, isFetching } = useQuery({
     queryKey:["audit", plantId, from, to, deptFilter, tableFilter],
     queryFn: async () => {
       let q = supabase.from("audit_logs").select("*, profiles:user_id(email,full_name), departments:department_id(code,name)")
@@ -130,10 +130,21 @@ function Page() {
         </div>
 
         <div className="rounded-md border bg-card divide-y">
-          {(logs ?? []).length === 0 && (
+          {isLoading && (
+            <div className="p-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <Loader2 className="size-4 animate-spin" /> Loading activity for this plant…
+            </div>
+          )}
+          {!isLoading && (logs ?? []).length === 0 && (
             <div className="p-8 text-center text-sm text-muted-foreground">
-              No activity recorded for this plant between <b>{from}</b> and <b>{to}</b>.
-              <div className="mt-1 text-xs">Try widening the date range or clearing the module/department filters.</div>
+              <div className="font-medium text-foreground">No activity recorded for this plant.</div>
+              <div className="mt-1">Date range: <b>{from}</b> → <b>{to}</b>{tableFilter !== "all" && <> · Module: <b>{tableLabel[tableFilter]}</b></>}{deptFilter !== "all" && <> · Department filter applied</>}.</div>
+              <div className="mt-2 text-xs">Try widening the date range, switching to a different plant, or clearing the module/department filters. New events appear here as users approve, reject, scrap, or adjust inventory for this plant.</div>
+            </div>
+          )}
+          {!isLoading && isFetching && (logs ?? []).length > 0 && (
+            <div className="px-4 py-1.5 text-[11px] text-muted-foreground flex items-center gap-2 bg-muted/40">
+              <Loader2 className="size-3 animate-spin" /> Refreshing…
             </div>
           )}
           {(logs ?? []).map((l:any) => {
