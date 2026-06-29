@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedMastersSuppliersRouteImport } from './routes/_authenticated.masters.suppliers'
 import { Route as AuthenticatedMastersPlantsRouteImport } from './routes/_authenticated.masters.plants'
 import { Route as AuthenticatedMastersDepartmentsRouteImport } from './routes/_authenticated.masters.departments'
 
@@ -35,6 +36,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMastersSuppliersRoute =
+  AuthenticatedMastersSuppliersRouteImport.update({
+    id: '/masters/suppliers',
+    path: '/masters/suppliers',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedMastersPlantsRoute =
   AuthenticatedMastersPlantsRouteImport.update({
     id: '/masters/plants',
@@ -54,6 +61,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/masters/plants': typeof AuthenticatedMastersPlantsRoute
+  '/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,6 +69,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/masters/plants': typeof AuthenticatedMastersPlantsRoute
+  '/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,6 +79,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/_authenticated/masters/plants': typeof AuthenticatedMastersPlantsRoute
+  '/_authenticated/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -79,8 +89,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/masters/departments'
     | '/masters/plants'
+    | '/masters/suppliers'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/masters/departments' | '/masters/plants'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/masters/departments'
+    | '/masters/plants'
+    | '/masters/suppliers'
   id:
     | '__root__'
     | '/'
@@ -89,6 +106,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/masters/departments'
     | '/_authenticated/masters/plants'
+    | '/_authenticated/masters/suppliers'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -127,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/masters/suppliers': {
+      id: '/_authenticated/masters/suppliers'
+      path: '/masters/suppliers'
+      fullPath: '/masters/suppliers'
+      preLoaderRoute: typeof AuthenticatedMastersSuppliersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/masters/plants': {
       id: '/_authenticated/masters/plants'
       path: '/masters/plants'
@@ -148,12 +173,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMastersDepartmentsRoute: typeof AuthenticatedMastersDepartmentsRoute
   AuthenticatedMastersPlantsRoute: typeof AuthenticatedMastersPlantsRoute
+  AuthenticatedMastersSuppliersRoute: typeof AuthenticatedMastersSuppliersRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMastersDepartmentsRoute: AuthenticatedMastersDepartmentsRoute,
   AuthenticatedMastersPlantsRoute: AuthenticatedMastersPlantsRoute,
+  AuthenticatedMastersSuppliersRoute: AuthenticatedMastersSuppliersRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
