@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Plus, Shield, Trash2, Send } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { createUser, setUserRole, setUserPlants, deleteUser } from "@/lib/users.functions";
-import { adminSendOtp } from "@/lib/auth-events.functions";
+import { adminSendOtpSmtp } from "@/lib/smtp-otp.functions";
 
 const ROLES = [
   "super_admin","plant_admin","production_manager","production_operator",
@@ -48,7 +48,7 @@ function Inner() {
   const setRole = useServerFn(setUserRole);
   const setPlants = useServerFn(setUserPlants);
   const del = useServerFn(deleteUser);
-  const sendOtp = useServerFn(adminSendOtp);
+  const sendOtp = useServerFn(adminSendOtpSmtp);
 
   const { data: profiles } = useQuery({
     queryKey: ["admin-profiles"],
