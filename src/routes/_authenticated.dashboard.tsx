@@ -1,10 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmtNum, fmtDate } from "@/lib/format";
-import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2, ClipboardList, Clock } from "lucide-react";
+import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2 } from "lucide-react";
 import { ExportMenu } from "@/components/export-menu";
 import { useScopedPlantIds, useScope } from "@/lib/scope";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
@@ -33,11 +33,6 @@ function useKpi(plantIds: string[]) {
         supabase.from("v_current_stock").select("current_stock"),
         supabase.from("v_current_stock").select("material_id", { count: "exact", head: true }).eq("is_low", true),
       ]);
-      const [pendProd, pendPur] = await Promise.all([
-        inPlants(supabase.from("production_entries").select("id", { count: "exact", head: true }).eq("status", "pending")),
-        inPlants(supabase.from("purchase_orders").select("id,pending_qty", { count: "exact" }).eq("status", "pending")),
-      ]);
-      const pendingPurchaseQty = ((pendPur.data ?? []) as any[]).reduce((a, r) => a + Number(r.pending_qty || 0), 0);
       const todaysConsumption = ((prod.data ?? []) as any[]).reduce((a, r) => a + Number(r.total_meter_consumed || 0), 0);
       const todaysPurchaseAmt = ((pur.data ?? []) as any[]).reduce((a, r) => a + Number(r.total_amount || 0), 0);
       const currentStock = ((stock.data ?? []) as any[]).reduce((a, r) => a + Number(r.current_stock || 0), 0);
@@ -47,9 +42,6 @@ function useKpi(plantIds: string[]) {
         todaysPurchaseAmt,
         currentStock,
         lowStock: low.count ?? 0,
-        pendingApprovals: (pendProd.count ?? 0) + (pendPur.count ?? 0),
-        pendingPurchaseOrders: pendPur.count ?? 0,
-        pendingPurchaseQty,
         materials: mat.count ?? 0,
         products: prods.count ?? 0,
         suppliers: sup.count ?? 0,
@@ -104,7 +96,6 @@ function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: strin
 }
 
 function Dashboard() {
-  // dashboard
   const plantIds = useScopedPlantIds();
   const { data: k } = useKpi(plantIds);
   const { data: chart } = useCharts(plantIds);
@@ -112,26 +103,6 @@ function Dashboard() {
     queryKey: ["low-stock-list", plantIds.join(",")],
     queryFn: async () => {
       let q = supabase.from("v_current_stock").select("*").eq("is_low", true).order("current_stock").limit(10);
-      if (plantIds.length) q = q.in("plant_id", plantIds);
-      return (await q).data ?? [];
-    },
-  });
-  const { data: pendingProd } = useQuery({
-    queryKey: ["pending-prod-list", plantIds.join(",")],
-    queryFn: async () => {
-      let q = supabase.from("production_entries")
-        .select("id,entry_no,entry_date,quantity,plants(code),products(code,name)")
-        .eq("status","pending").order("entry_date",{ascending:false}).limit(8);
-      if (plantIds.length) q = q.in("plant_id", plantIds);
-      return (await q).data ?? [];
-    },
-  });
-  const { data: pendingPur } = useQuery({
-    queryKey: ["pending-pur-list", plantIds.join(",")],
-    queryFn: async () => {
-      let q = supabase.from("purchase_orders")
-        .select("id,po_no,po_date,quantity,total_amount,plants(code),materials(code,name),suppliers(name)")
-        .eq("status","pending").order("po_date",{ascending:false}).limit(8);
       if (plantIds.length) q = q.in("plant_id", plantIds);
       return (await q).data ?? [];
     },
@@ -150,9 +121,6 @@ function Dashboard() {
               { label:"Today's Purchase Value (₹)", value: k.todaysPurchaseAmt },
               { label:"Current Stock", value: k.currentStock },
               { label:"Low Stock Items", value: k.lowStock },
-              { label:"Pending Approvals", value: k.pendingApprovals },
-              { label:"Pending Purchase Orders", value: k.pendingPurchaseOrders },
-              { label:"Pending Purchase Qty", value: k.pendingPurchaseQty },
               { label:"Products", value: k.products },
               { label:"Materials", value: k.materials },
               { label:"Suppliers", value: k.suppliers },
@@ -168,13 +136,11 @@ function Dashboard() {
           className="lg:sticky z-40 -mx-4 md:-mx-6 px-4 md:px-6 pt-3 pb-3 bg-background border-b shadow-md"
           style={{ top: "var(--app-header-h, 64px)" }}
         >
-          <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
             <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
             <Kpi icon={Boxes} label="Today's Consumption (m)" value={fmtNum(k?.todaysConsumption)} />
             <Kpi icon={ShoppingCart} label="Today's Purchase Value" value={"₹ " + fmtNum(k?.todaysPurchaseAmt)} />
             <Kpi icon={AlertTriangle} label="Low Stock Items" value={fmtNum(k?.lowStock, 0)} tone={k && k.lowStock > 0 ? "warn" : "ok"} />
-            <Kpi icon={ClipboardList} label="Pending Approvals" value={fmtNum(k?.pendingApprovals, 0)} tone={k && k.pendingApprovals > 0 ? "warn" : "ok"} />
-            <Kpi icon={Clock} label="Pending Purchase Qty" value={fmtNum(k?.pendingPurchaseQty)} hint={`${k?.pendingPurchaseOrders ?? 0} open PO(s)`} />
             <Kpi icon={Package} label="Products" value={fmtNum(k?.products, 0)} />
             <Kpi icon={Wrench} label="Materials" value={fmtNum(k?.materials, 0)} />
             <Kpi icon={Truck} label="Suppliers" value={fmtNum(k?.suppliers, 0)} />
@@ -241,57 +207,6 @@ function Dashboard() {
             )}
           </CardContent>
         </Card>
-
-        <div className="grid lg:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2"><ClipboardList className="size-4 text-primary"/>Production approvals pending</CardTitle>
-              <Link to="/production" className="text-xs text-primary hover:underline">Review →</Link>
-            </CardHeader>
-            <CardContent>
-              {(!pendingProd || pendingProd.length === 0) ? (
-                <div className="text-sm text-muted-foreground py-4 text-center">No pending production entries.</div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead className="text-xs text-muted-foreground border-b"><tr><th className="text-left py-2">Entry</th><th className="text-left py-2">Date</th><th className="text-left py-2">Plant</th><th className="text-left py-2">Product</th><th className="text-right py-2">Qty</th></tr></thead>
-                  <tbody>{pendingProd.map((r:any)=>(
-                    <tr key={r.id} className="border-b last:border-b-0">
-                      <td className="py-2 font-mono text-xs">{r.entry_no}</td>
-                      <td className="py-2">{fmtDate(r.entry_date)}</td>
-                      <td className="py-2">{r.plants?.code ?? "—"}</td>
-                      <td className="py-2">{r.products ? `${r.products.code}` : "—"}</td>
-                      <td className="py-2 text-right tabular-nums">{fmtNum(r.quantity, 0)}</td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2"><Clock className="size-4 text-primary"/>Purchase orders pending</CardTitle>
-              <Link to="/purchase" className="text-xs text-primary hover:underline">Review →</Link>
-            </CardHeader>
-            <CardContent>
-              {(!pendingPur || pendingPur.length === 0) ? (
-                <div className="text-sm text-muted-foreground py-4 text-center">No pending purchase orders.</div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead className="text-xs text-muted-foreground border-b"><tr><th className="text-left py-2">PO</th><th className="text-left py-2">Date</th><th className="text-left py-2">Supplier</th><th className="text-left py-2">Material</th><th className="text-right py-2">Amount</th></tr></thead>
-                  <tbody>{pendingPur.map((r:any)=>(
-                    <tr key={r.id} className="border-b last:border-b-0">
-                      <td className="py-2 font-mono text-xs">{r.po_no}</td>
-                      <td className="py-2">{fmtDate(r.po_date)}</td>
-                      <td className="py-2">{r.suppliers?.name ?? "—"}</td>
-                      <td className="py-2">{r.materials?.code ?? "—"}</td>
-                      <td className="py-2 text-right tabular-nums">₹ {fmtNum(r.total_amount, 2)}</td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              )}
-            </CardContent>
-          </Card>
-        </div>
       </PageBody>
     </>
   );
