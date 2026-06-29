@@ -11,10 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calculator, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum, fmtDate } from "@/lib/format";
-import { useAuth } from "@/lib/auth";
 import { ExportMenu } from "@/components/export-menu";
 import { ExcelImport } from "@/components/excel-import";
 
@@ -22,8 +21,6 @@ export const Route = createFileRoute("/_authenticated/production")({ component: 
 
 function Page() {
   const qc = useQueryClient();
-  const { hasAny } = useAuth();
-  const canApprove = hasAny(["super_admin","plant_admin","production_manager","store_manager"]);
 
   const { data } = useQuery({
     queryKey:["production"],
