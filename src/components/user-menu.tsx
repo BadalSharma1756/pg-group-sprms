@@ -19,7 +19,14 @@ export function UserMenu() {
           {initials}
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        alignOffset={0}
+        collisionPadding={12}
+        avoidCollisions={false}
+        className="w-56"
+      >
         <div className="flex items-center gap-2 px-2 py-2">
           <Mail className="size-4 text-primary shrink-0" />
           <span className="text-xs font-medium truncate text-foreground">{email}</span>
