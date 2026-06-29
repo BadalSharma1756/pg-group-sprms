@@ -1,0 +1,133 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { PageBody, PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DataTable } from "@/components/data-table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, CheckCircle2, Calculator } from "lucide-react";
+import { toast } from "sonner";
+import { fmtNum, fmtCurrency, fmtDate } from "@/lib/format";
+import { useAuth } from "@/lib/auth";
+
+export const Route = createFileRoute("/_authenticated/purchase")({ component: Page });
+
+function Page() {
+  const qc = useQueryClient();
+  const { hasAny } = useAuth();
+  const canApprove = hasAny(["super_admin","plant_admin","purchase_manager","store_manager"]);
+
+  const { data } = useQuery({ queryKey:["purchase"], queryFn: async () =>
+    (await supabase.from("purchase_orders").select("*, suppliers(code,name), materials(code,name), plants(code)").order("po_date",{ascending:false}).limit(200)).data });
+  const { data: suppliers } = useQuery({ queryKey:["sup-lite"], queryFn: async () => (await supabase.from("suppliers").select("id,code,name").eq("status","active")).data });
+  const { data: materials } = useQuery({ queryKey:["mat-lite-po"], queryFn: async () => (await supabase.from("materials").select("id,code,name").eq("status","active")).data });
+  const { data: plants } = useQuery({ queryKey:["plants-lite-po"], queryFn: async () => (await supabase.from("plants").select("id,code,name").eq("status","active")).data });
+
+  const [open,setOpen]=useState(false);
+  const [f,setF]=useState({ po_date:new Date().toISOString().slice(0,10), invoice_no:"", invoice_date:"", supplier_id:"", material_id:"", plant_id:"", quantity:0, rate:0, gst_pct:18, transport:0, received_qty:0, remarks:"" });
+
+  const calc = useMemo(()=>{
+    const sub = f.quantity * f.rate;
+    const gst = sub * (f.gst_pct/100);
+    return { sub, gst, total: sub+gst+(f.transport||0) };
+  },[f.quantity,f.rate,f.gst_pct,f.transport]);
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const payload:any = { ...f };
+      if (!payload.invoice_date) delete payload.invoice_date;
+      if (!payload.invoice_no) delete payload.invoice_no;
+      const { error } = await supabase.from("purchase_orders").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Purchase order created"); setOpen(false);
+      setF({ po_date:new Date().toISOString().slice(0,10), invoice_no:"", invoice_date:"", supplier_id:"", material_id:"", plant_id:"", quantity:0, rate:0, gst_pct:18, transport:0, received_qty:0, remarks:"" });
+      qc.invalidateQueries({queryKey:["purchase"]});
+    },
+    onError:(e:any)=>toast.error(e.message),
+  });
+
+  const approve = useMutation({
+    mutationFn: async (id:string) => { const { error } = await supabase.from("purchase_orders").update({ status:"approved", approved_at: new Date().toISOString() }).eq("id", id); if (error) throw error; },
+    onSuccess: () => { toast.success("Approved — stock received"); qc.invalidateQueries({queryKey:["purchase"]}); },
+    onError:(e:any)=>toast.error(e.message),
+  });
+
+  return (
+    <>
+      <PageHeader title="Purchase Orders" subtitle="GST and totals auto-calculated; approval posts inventory IN"
+        actions={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button><Plus className="size-4 mr-1"/>New PO</Button></DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle>New purchase order</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div><Label>PO Date</Label><Input type="date" value={f.po_date} onChange={(e)=>setF({...f, po_date:e.target.value})}/></div>
+                  <div><Label>Invoice #</Label><Input value={f.invoice_no} onChange={(e)=>setF({...f, invoice_no:e.target.value})}/></div>
+                  <div><Label>Invoice date</Label><Input type="date" value={f.invoice_date} onChange={(e)=>setF({...f, invoice_date:e.target.value})}/></div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><Label>Supplier</Label>
+                    <Select value={f.supplier_id} onValueChange={(v)=>setF({...f, supplier_id:v})}>
+                      <SelectTrigger><SelectValue placeholder="Supplier"/></SelectTrigger>
+                      <SelectContent>{(suppliers ?? []).map((s:any)=> <SelectItem key={s.id} value={s.id}>{s.code} — {s.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Material</Label>
+                    <Select value={f.material_id} onValueChange={(v)=>setF({...f, material_id:v})}>
+                      <SelectTrigger><SelectValue placeholder="Material"/></SelectTrigger>
+                      <SelectContent>{(materials ?? []).map((m:any)=> <SelectItem key={m.id} value={m.id}>{m.code} — {m.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Plant</Label>
+                    <Select value={f.plant_id} onValueChange={(v)=>setF({...f, plant_id:v})}>
+                      <SelectTrigger><SelectValue placeholder="Plant"/></SelectTrigger>
+                      <SelectContent>{(plants ?? []).map((p:any)=> <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-3">
+                  <div><Label>Qty</Label><Input type="number" value={f.quantity} onChange={(e)=>setF({...f, quantity:Number(e.target.value)})}/></div>
+                  <div><Label>Rate</Label><Input type="number" step="0.01" value={f.rate} onChange={(e)=>setF({...f, rate:Number(e.target.value)})}/></div>
+                  <div><Label>GST %</Label><Input type="number" step="0.01" value={f.gst_pct} onChange={(e)=>setF({...f, gst_pct:Number(e.target.value)})}/></div>
+                  <div><Label>Transport</Label><Input type="number" step="0.01" value={f.transport} onChange={(e)=>setF({...f, transport:Number(e.target.value)})}/></div>
+                </div>
+                <div className="rounded-md border bg-muted/40 p-3 text-xs">
+                  <div className="flex items-center gap-2 font-medium text-foreground mb-2"><Calculator className="size-4 text-primary"/>Auto totals</div>
+                  <div className="grid grid-cols-3 gap-2 tabular-nums">
+                    <div><div className="text-muted-foreground">Sub-total</div><div className="font-semibold">{fmtCurrency(calc.sub)}</div></div>
+                    <div><div className="text-muted-foreground">GST</div><div className="font-semibold">{fmtCurrency(calc.gst)}</div></div>
+                    <div><div className="text-muted-foreground">Total</div><div className="font-semibold">{fmtCurrency(calc.total)}</div></div>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.supplier_id || !f.material_id || !f.plant_id || f.quantity<=0 || create.isPending}>Save</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
+        } />
+      <PageBody>
+        <DataTable rows={data ?? undefined} columns={[
+          { header:"PO #", cell:(r:any)=> <span className="font-mono text-xs">{r.po_no}</span> },
+          { header:"Date", cell:(r:any)=> fmtDate(r.po_date) },
+          { header:"Supplier", cell:(r:any)=> r.suppliers ? `${r.suppliers.code}` : "—" },
+          { header:"Material", cell:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—" },
+          { header:"Plant", cell:(r:any)=> r.plants?.code ?? "—" },
+          { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
+          { header:"Rate", cell:(r:any)=> fmtCurrency(r.rate) },
+          { header:"Total", cell:(r:any)=> fmtCurrency(r.total_amount) },
+          { header:"Pending", cell:(r:any)=> fmtNum(r.pending_qty) },
+          { header:"Status", cell:(r:any)=> <Badge variant={r.status==="approved"?"default":r.status==="rejected"?"destructive":"secondary"} className="capitalize">{r.status}</Badge> },
+          { header:"", cell:(r:any)=> canApprove && r.status!=="approved"
+            ? <Button size="sm" variant="outline" onClick={()=>approve.mutate(r.id)}><CheckCircle2 className="size-4 mr-1"/>Approve</Button>
+            : null },
+        ]} />
+      </PageBody>
+    </>
+  );
+}

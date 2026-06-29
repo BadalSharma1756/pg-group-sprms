@@ -9,38 +9,240 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedScrapRouteImport } from './routes/_authenticated.scrap'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated.reports'
+import { Route as AuthenticatedPurchaseRouteImport } from './routes/_authenticated.purchase'
+import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated.production'
+import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated.inventory'
+import { Route as AuthenticatedGapVerificationRouteImport } from './routes/_authenticated.gap-verification'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedMastersSuppliersRouteImport } from './routes/_authenticated.masters.suppliers'
+import { Route as AuthenticatedMastersProductsRouteImport } from './routes/_authenticated.masters.products'
+import { Route as AuthenticatedMastersPlantsRouteImport } from './routes/_authenticated.masters.plants'
+import { Route as AuthenticatedMastersPipeSizesRouteImport } from './routes/_authenticated.masters.pipe-sizes'
+import { Route as AuthenticatedMastersMaterialsRouteImport } from './routes/_authenticated.masters.materials'
+import { Route as AuthenticatedMastersDepartmentsRouteImport } from './routes/_authenticated.masters.departments'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedScrapRoute = AuthenticatedScrapRouteImport.update({
+  id: '/scrap',
+  path: '/scrap',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPurchaseRoute = AuthenticatedPurchaseRouteImport.update({
+  id: '/purchase',
+  path: '/purchase',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
+  id: '/production',
+  path: '/production',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedGapVerificationRoute =
+  AuthenticatedGapVerificationRouteImport.update({
+    id: '/gap-verification',
+    path: '/gap-verification',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMastersSuppliersRoute =
+  AuthenticatedMastersSuppliersRouteImport.update({
+    id: '/masters/suppliers',
+    path: '/masters/suppliers',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedMastersProductsRoute =
+  AuthenticatedMastersProductsRouteImport.update({
+    id: '/masters/products',
+    path: '/masters/products',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedMastersPlantsRoute =
+  AuthenticatedMastersPlantsRouteImport.update({
+    id: '/masters/plants',
+    path: '/masters/plants',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedMastersPipeSizesRoute =
+  AuthenticatedMastersPipeSizesRouteImport.update({
+    id: '/masters/pipe-sizes',
+    path: '/masters/pipe-sizes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedMastersMaterialsRoute =
+  AuthenticatedMastersMaterialsRouteImport.update({
+    id: '/masters/materials',
+    path: '/masters/materials',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedMastersDepartmentsRoute =
+  AuthenticatedMastersDepartmentsRouteImport.update({
+    id: '/masters/departments',
+    path: '/masters/departments',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/gap-verification': typeof AuthenticatedGapVerificationRoute
+  '/inventory': typeof AuthenticatedInventoryRoute
+  '/production': typeof AuthenticatedProductionRoute
+  '/purchase': typeof AuthenticatedPurchaseRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/scrap': typeof AuthenticatedScrapRoute
+  '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
+  '/masters/materials': typeof AuthenticatedMastersMaterialsRoute
+  '/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
+  '/masters/plants': typeof AuthenticatedMastersPlantsRoute
+  '/masters/products': typeof AuthenticatedMastersProductsRoute
+  '/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/gap-verification': typeof AuthenticatedGapVerificationRoute
+  '/inventory': typeof AuthenticatedInventoryRoute
+  '/production': typeof AuthenticatedProductionRoute
+  '/purchase': typeof AuthenticatedPurchaseRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/scrap': typeof AuthenticatedScrapRoute
+  '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
+  '/masters/materials': typeof AuthenticatedMastersMaterialsRoute
+  '/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
+  '/masters/plants': typeof AuthenticatedMastersPlantsRoute
+  '/masters/products': typeof AuthenticatedMastersProductsRoute
+  '/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/gap-verification': typeof AuthenticatedGapVerificationRoute
+  '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
+  '/_authenticated/production': typeof AuthenticatedProductionRoute
+  '/_authenticated/purchase': typeof AuthenticatedPurchaseRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/scrap': typeof AuthenticatedScrapRoute
+  '/_authenticated/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
+  '/_authenticated/masters/materials': typeof AuthenticatedMastersMaterialsRoute
+  '/_authenticated/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
+  '/_authenticated/masters/plants': typeof AuthenticatedMastersPlantsRoute
+  '/_authenticated/masters/products': typeof AuthenticatedMastersProductsRoute
+  '/_authenticated/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/gap-verification'
+    | '/inventory'
+    | '/production'
+    | '/purchase'
+    | '/reports'
+    | '/scrap'
+    | '/masters/departments'
+    | '/masters/materials'
+    | '/masters/pipe-sizes'
+    | '/masters/plants'
+    | '/masters/products'
+    | '/masters/suppliers'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/gap-verification'
+    | '/inventory'
+    | '/production'
+    | '/purchase'
+    | '/reports'
+    | '/scrap'
+    | '/masters/departments'
+    | '/masters/materials'
+    | '/masters/pipe-sizes'
+    | '/masters/plants'
+    | '/masters/products'
+    | '/masters/suppliers'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/gap-verification'
+    | '/_authenticated/inventory'
+    | '/_authenticated/production'
+    | '/_authenticated/purchase'
+    | '/_authenticated/reports'
+    | '/_authenticated/scrap'
+    | '/_authenticated/masters/departments'
+    | '/_authenticated/masters/materials'
+    | '/_authenticated/masters/pipe-sizes'
+    | '/_authenticated/masters/plants'
+    | '/_authenticated/masters/products'
+    | '/_authenticated/masters/suppliers'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +250,141 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/scrap': {
+      id: '/_authenticated/scrap'
+      path: '/scrap'
+      fullPath: '/scrap'
+      preLoaderRoute: typeof AuthenticatedScrapRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/purchase': {
+      id: '/_authenticated/purchase'
+      path: '/purchase'
+      fullPath: '/purchase'
+      preLoaderRoute: typeof AuthenticatedPurchaseRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/production': {
+      id: '/_authenticated/production'
+      path: '/production'
+      fullPath: '/production'
+      preLoaderRoute: typeof AuthenticatedProductionRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/inventory': {
+      id: '/_authenticated/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof AuthenticatedInventoryRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/gap-verification': {
+      id: '/_authenticated/gap-verification'
+      path: '/gap-verification'
+      fullPath: '/gap-verification'
+      preLoaderRoute: typeof AuthenticatedGapVerificationRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/masters/suppliers': {
+      id: '/_authenticated/masters/suppliers'
+      path: '/masters/suppliers'
+      fullPath: '/masters/suppliers'
+      preLoaderRoute: typeof AuthenticatedMastersSuppliersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/masters/products': {
+      id: '/_authenticated/masters/products'
+      path: '/masters/products'
+      fullPath: '/masters/products'
+      preLoaderRoute: typeof AuthenticatedMastersProductsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/masters/plants': {
+      id: '/_authenticated/masters/plants'
+      path: '/masters/plants'
+      fullPath: '/masters/plants'
+      preLoaderRoute: typeof AuthenticatedMastersPlantsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/masters/pipe-sizes': {
+      id: '/_authenticated/masters/pipe-sizes'
+      path: '/masters/pipe-sizes'
+      fullPath: '/masters/pipe-sizes'
+      preLoaderRoute: typeof AuthenticatedMastersPipeSizesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/masters/materials': {
+      id: '/_authenticated/masters/materials'
+      path: '/masters/materials'
+      fullPath: '/masters/materials'
+      preLoaderRoute: typeof AuthenticatedMastersMaterialsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/masters/departments': {
+      id: '/_authenticated/masters/departments'
+      path: '/masters/departments'
+      fullPath: '/masters/departments'
+      preLoaderRoute: typeof AuthenticatedMastersDepartmentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedGapVerificationRoute: typeof AuthenticatedGapVerificationRoute
+  AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
+  AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
+  AuthenticatedPurchaseRoute: typeof AuthenticatedPurchaseRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedScrapRoute: typeof AuthenticatedScrapRoute
+  AuthenticatedMastersDepartmentsRoute: typeof AuthenticatedMastersDepartmentsRoute
+  AuthenticatedMastersMaterialsRoute: typeof AuthenticatedMastersMaterialsRoute
+  AuthenticatedMastersPipeSizesRoute: typeof AuthenticatedMastersPipeSizesRoute
+  AuthenticatedMastersPlantsRoute: typeof AuthenticatedMastersPlantsRoute
+  AuthenticatedMastersProductsRoute: typeof AuthenticatedMastersProductsRoute
+  AuthenticatedMastersSuppliersRoute: typeof AuthenticatedMastersSuppliersRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedGapVerificationRoute: AuthenticatedGapVerificationRoute,
+  AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
+  AuthenticatedProductionRoute: AuthenticatedProductionRoute,
+  AuthenticatedPurchaseRoute: AuthenticatedPurchaseRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedScrapRoute: AuthenticatedScrapRoute,
+  AuthenticatedMastersDepartmentsRoute: AuthenticatedMastersDepartmentsRoute,
+  AuthenticatedMastersMaterialsRoute: AuthenticatedMastersMaterialsRoute,
+  AuthenticatedMastersPipeSizesRoute: AuthenticatedMastersPipeSizesRoute,
+  AuthenticatedMastersPlantsRoute: AuthenticatedMastersPlantsRoute,
+  AuthenticatedMastersProductsRoute: AuthenticatedMastersProductsRoute,
+  AuthenticatedMastersSuppliersRoute: AuthenticatedMastersSuppliersRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
