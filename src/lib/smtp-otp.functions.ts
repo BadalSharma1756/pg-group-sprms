@@ -12,6 +12,7 @@ function isAllowedEmail(email: string) {
 const LOCKOUT_WINDOW_MIN = 15;
 const LOCKOUT_DURATION_MIN = 15;
 const LOCKOUT_THRESHOLD = 5;
+const OTP_VERIFY_TYPES = ["email", "magiclink", "recovery"] as const;
 
 async function checkLocked(supabaseAdmin: any, email: string) {
   const since = new Date(Date.now() - LOCKOUT_WINDOW_MIN * 60_000).toISOString();
@@ -108,6 +109,7 @@ async function generateAndSendOtp(email: string, trigger: "user" | "admin", acto
     throw new Error(gen.error?.message ?? "Failed to generate OTP");
   }
   const code = gen.data.properties.email_otp as string;
+  const verificationType = gen.data.properties.verification_type ?? "magiclink";
 
   // Send via custom SMTP (Office 365).
   const nodemailerMod: any = await import("nodemailer");
@@ -146,6 +148,7 @@ async function generateAndSendOtp(email: string, trigger: "user" | "admin", acto
       status: sendStatus,
       channel: "smtp",
       host: process.env.SMTP_HOST,
+      verification_type: verificationType,
       triggered_by: actorId ?? null,
     },
   });
@@ -208,19 +211,45 @@ export const verifyOtpEmail = createServerFn({ method: "POST" })
       process.env.SUPABASE_PUBLISHABLE_KEY!,
       { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
     );
-    const { data: verifyData, error } = await supa.auth.verifyOtp({
-      email, token: data.token, type: "magiclink",
-    });
 
-    if (error || !verifyData?.session) {
-      const res = await recordOtpFailureInternal(email, error?.message ?? "Invalid OTP");
+    const { data: lastOtp } = await supabaseAdmin
+      .from("auth_events")
+      .select("metadata")
+      .eq("email", email)
+      .in("event_type", ["otp_sent", "admin_otp_sent"])
+      .eq("success", true)
+      .gte("created_at", new Date(Date.now() - 15 * 60_000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const preferredType = lastOtp?.metadata?.verification_type;
+    const verifyTypes = [
+      ...(OTP_VERIFY_TYPES.includes(preferredType) ? [preferredType] : []),
+      ...OTP_VERIFY_TYPES.filter((t) => t !== preferredType),
+    ];
+
+    let verifyData: any = null;
+    let lastError: any = null;
+    for (const type of verifyTypes) {
+      const attempt = await supa.auth.verifyOtp({ email, token: data.token, type });
+      if (attempt.data?.session && !attempt.error) {
+        verifyData = attempt.data;
+        lastError = null;
+        break;
+      }
+      lastError = attempt.error;
+    }
+
+    if (lastError || !verifyData?.session) {
+      const res = await recordOtpFailureInternal(email, lastError?.message ?? "Invalid OTP");
       return {
         ok: false as const,
         locked: res.locked,
         failed_count: res.failed_count,
         threshold: LOCKOUT_THRESHOLD,
         lockout_minutes: res.locked ? LOCKOUT_DURATION_MIN : undefined,
-        message: error?.message ?? "Invalid OTP",
+        message: lastError?.message ?? "Invalid OTP",
       };
     }
 
