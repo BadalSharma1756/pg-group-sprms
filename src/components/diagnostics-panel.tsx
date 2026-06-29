@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
 export function DiagnosticsPanel() {
-  const { session, loading, roles } = useAuth();
+  const { session, loading, roles, hasAny } = useAuth();
   const [, force] = useState(0);
   const [lastGet, setLastGet] = useState<{ ok: boolean; ms: number; at: string; err?: string } | null>(null);
 
@@ -31,6 +31,8 @@ export function DiagnosticsPanel() {
     }
   };
   useEffect(() => { refresh(); }, []);
+
+  if (!hasAny(["super_admin"])) return null;
 
   const exp = session?.expires_at ? new Date(session.expires_at * 1000) : null;
   const expIn = exp ? Math.round((exp.getTime() - Date.now()) / 1000) : null;

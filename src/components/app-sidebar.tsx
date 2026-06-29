@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Factory, ShoppingCart, Boxes, ClipboardCheck, Trash2, BarChart3,
   Building2, Layers, Truck, Ruler, Package, Wrench, LogOut, History, Users,
+  PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -30,7 +31,7 @@ const baseGroups: { label: string; items: { to: string; icon: any; label: string
   ]},
 ];
 
-export function AppSidebar({ collapsed }: { collapsed: boolean }) {
+export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { user, signOut, roles, hasAny } = useAuth();
   const groups = hasAny(["super_admin"])
@@ -44,16 +45,27 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
         collapsed ? "w-16" : "w-64",
       )}
     >
-      <div className={cn("flex items-center gap-3 border-b border-sidebar-border h-16 bg-gradient-to-r from-primary/5 to-transparent", collapsed ? "justify-center px-2" : "px-5")}>
-        <div className="size-9 rounded-md bg-primary/10 grid place-items-center shrink-0 p-1 ring-1 ring-primary/20">
+      <div className={cn("flex items-center border-b border-sidebar-border bg-gradient-to-r from-primary/5 to-transparent relative", collapsed ? "flex-col gap-2 px-2 py-3" : "gap-3 px-4 py-3")}>
+        <div className={cn("rounded-lg bg-white grid place-items-center shrink-0 p-1.5 ring-1 ring-primary/20 shadow-sm", collapsed ? "size-11" : "size-14")}>
           <img src={logo.url} alt="PG" className="size-full object-contain" />
         </div>
         {!collapsed && (
-          <div className="min-w-0">
-            <div className="font-bold tracking-tight text-sm truncate text-foreground">SPRMS</div>
+          <div className="min-w-0 flex-1">
+            <div className="font-bold tracking-tight text-base truncate text-foreground">SPRMS</div>
             <div className="text-[10px] uppercase tracking-wider text-primary/80 font-medium">SS Pipe Ricco · v1.0</div>
           </div>
         )}
+        <button
+          onClick={onToggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand" : "Collapse"}
+          className={cn(
+            "size-7 grid place-items-center rounded-md border bg-background hover:bg-accent text-muted-foreground shrink-0",
+            collapsed ? "" : "ml-auto",
+          )}
+        >
+          {collapsed ? <PanelLeftOpen className="size-3.5" /> : <PanelLeftClose className="size-3.5" />}
+        </button>
       </div>
       <nav className={cn("flex-1 overflow-y-auto py-4 space-y-5", collapsed ? "px-2" : "px-3")}>
         {groups.map((g) => (
