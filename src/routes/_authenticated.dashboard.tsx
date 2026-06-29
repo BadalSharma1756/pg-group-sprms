@@ -270,7 +270,13 @@ function Dashboard() {
             <CardHeader><CardTitle className="text-sm">Daily consumption (last 14 days, meters)</CardTitle></CardHeader>
             <CardContent className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chart ?? []}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis /><Tooltip /><Bar dataKey="production" fill="var(--primary)" radius={[4,4,0,0]} /></BarChart>
+                <BarChart data={chart ?? []}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
+                  <XAxis dataKey="date" fontSize={11} tick={{ fill: "var(--muted-foreground)" }} stroke="var(--border)"/>
+                  <YAxis fontSize={11} tick={{ fill: "var(--muted-foreground)" }} stroke="var(--border)"/>
+                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} cursor={{ fill: "var(--muted)", opacity: 0.4 }}/>
+                  <Bar dataKey="production" name="Meters" fill="var(--chart-1)" radius={[4,4,0,0]} />
+                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
@@ -278,7 +284,14 @@ function Dashboard() {
             <CardHeader><CardTitle className="text-sm">Purchase value trend (₹)</CardTitle></CardHeader>
             <CardContent className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chart ?? []}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="purchase" stroke="var(--primary)" strokeWidth={2} dot={false} /></LineChart>
+                <LineChart data={chart ?? []}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
+                  <XAxis dataKey="date" fontSize={11} tick={{ fill: "var(--muted-foreground)" }} stroke="var(--border)"/>
+                  <YAxis fontSize={11} tick={{ fill: "var(--muted-foreground)" }} stroke="var(--border)"/>
+                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}/>
+                  <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }}/>
+                  <Line type="monotone" name="Purchase ₹" dataKey="purchase" stroke="var(--chart-1)" strokeWidth={2} dot={false} />
+                </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>

@@ -13,6 +13,17 @@ import { fmtNum } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/reports")({ component: Page });
 
+const TOOLTIP_STYLE = {
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: 8,
+  fontSize: 12,
+  color: "var(--card-foreground)",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+} as const;
+const AXIS_STYLE = { fill: "var(--muted-foreground)" } as const;
+const LEGEND_STYLE = { fontSize: 12, color: "var(--muted-foreground)" } as const;
+
 function Page() {
   const today = new Date().toISOString().slice(0,10);
   const monthAgo = new Date(Date.now()-30*86400000).toISOString().slice(0,10);
@@ -44,7 +55,7 @@ function Page() {
   const topMaterials = rank((cons ?? []) as any[], (r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—", "qty_out").slice(0,10);
   const byPlant = rank((prod ?? []) as any[], (r:any)=> r.plants?.code ?? "—", "total_meter_consumed");
   const byDept  = rank((prod ?? []) as any[], (r:any)=> r.departments ? `${r.departments.code}` : "—", "total_meter_consumed");
-  const PIE_COLORS = ["var(--primary)","var(--chart-2)","var(--chart-3)","var(--chart-4)","var(--chart-5)","var(--chart-1)"];
+  const PIE_COLORS = ["var(--chart-1)","var(--chart-2)","var(--chart-3)","var(--chart-4)","var(--chart-5)","var(--primary)"];
 
   return (
     <>
@@ -89,9 +100,12 @@ function Page() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={prodSeries}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
-                  <XAxis dataKey="date" fontSize={11}/><YAxis fontSize={11}/><Tooltip/>
-                  <Bar dataKey="quantity" fill="var(--primary)" radius={[4,4,0,0]} />
-                  <Bar dataKey="total_meter_consumed" fill="var(--chart-2)" radius={[4,4,0,0]} />
+                  <XAxis dataKey="date" fontSize={11} tick={AXIS_STYLE} stroke="var(--border)"/>
+                  <YAxis fontSize={11} tick={AXIS_STYLE} stroke="var(--border)"/>
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--muted)", opacity: 0.4 }}/>
+                  <Legend wrapperStyle={LEGEND_STYLE}/>
+                  <Bar dataKey="quantity" name="Units" fill="var(--chart-1)" radius={[4,4,0,0]} />
+                  <Bar dataKey="total_meter_consumed" name="Meters" fill="var(--chart-2)" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -102,9 +116,12 @@ function Page() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={purSeries}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
-                  <XAxis dataKey="date" fontSize={11}/><YAxis fontSize={11}/><Tooltip/>
-                  <Line type="monotone" dataKey="quantity" stroke="var(--primary)" strokeWidth={2} dot={false}/>
-                  <Line type="monotone" dataKey="total_amount" stroke="var(--chart-3)" strokeWidth={2} dot={false}/>
+                  <XAxis dataKey="date" fontSize={11} tick={AXIS_STYLE} stroke="var(--border)"/>
+                  <YAxis fontSize={11} tick={AXIS_STYLE} stroke="var(--border)"/>
+                  <Tooltip contentStyle={TOOLTIP_STYLE}/>
+                  <Legend wrapperStyle={LEGEND_STYLE}/>
+                  <Line type="monotone" name="Qty" dataKey="quantity" stroke="var(--chart-1)" strokeWidth={2} dot={false}/>
+                  <Line type="monotone" name="Amount" dataKey="total_amount" stroke="var(--chart-3)" strokeWidth={2} dot={false}/>
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -118,8 +135,10 @@ function Page() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={byPlant} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
-                  <XAxis type="number" fontSize={11}/><YAxis type="category" dataKey="key" width={80} fontSize={11}/><Tooltip/>
-                  <Bar dataKey="value" fill="var(--primary)" radius={[0,4,4,0]}/>
+                  <XAxis type="number" fontSize={11} tick={AXIS_STYLE} stroke="var(--border)"/>
+                  <YAxis type="category" dataKey="key" width={80} fontSize={11} tick={AXIS_STYLE} stroke="var(--border)"/>
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--muted)", opacity: 0.4 }}/>
+                  <Bar dataKey="value" name="Meters" fill="var(--chart-1)" radius={[0,4,4,0]}/>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -129,10 +148,11 @@ function Page() {
             <CardContent className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byDept} dataKey="value" nameKey="key" outerRadius={90} label={(e:any)=>e.key}>
+                  <Pie data={byDept} dataKey="value" nameKey="key" outerRadius={90} label={(e:any)=>e.key} stroke="var(--card)" strokeWidth={2}>
                     {byDept.map((_,i)=> <Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
                   </Pie>
-                  <Tooltip/><Legend/>
+                  <Tooltip contentStyle={TOOLTIP_STYLE}/>
+                  <Legend wrapperStyle={LEGEND_STYLE}/>
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>

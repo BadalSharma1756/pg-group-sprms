@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExportMenu } from "@/components/export-menu";
-import { ArrowLeft, Factory, ShoppingCart, Trash2, ClipboardCheck, Boxes, Edit, Plus, X, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Factory, ShoppingCart, Trash2, ClipboardCheck, Boxes, Edit, Plus, X, Check, Loader2, AlertTriangle, RefreshCw, Inbox } from "lucide-react";
 import { fmtDateTime } from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/audit/$plantId")({ component: Page });
 
@@ -47,7 +48,7 @@ function Page() {
     queryFn: async () => (await supabase.from("departments").select("id,code,name").eq("plant_id", plantId)).data,
   });
 
-  const { data: logs, isLoading, isFetching } = useQuery({
+  const { data: logs, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey:["audit", plantId, from, to, deptFilter, tableFilter],
     queryFn: async () => {
       let q = supabase.from("audit_logs").select("*, profiles:user_id(email,full_name), departments:department_id(code,name)")
@@ -58,7 +59,8 @@ function Page() {
         .limit(500);
       if (deptFilter !== "all") q = q.eq("department_id", deptFilter);
       if (tableFilter !== "all") q = q.eq("table_name", tableFilter);
-      const { data } = await q;
+      const { data, error } = await q;
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -131,15 +133,49 @@ function Page() {
 
         <div className="rounded-md border bg-card divide-y">
           {isLoading && (
-            <div className="p-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
-              <Loader2 className="size-4 animate-spin" /> Loading activity for this plant…
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <Skeleton className="size-9 rounded-md shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex gap-2">
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                      <Skeleton className="h-5 w-32" />
+                    </div>
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                </div>
+              ))}
+              <div className="text-center text-xs text-muted-foreground flex items-center justify-center gap-2 pt-2">
+                <Loader2 className="size-3 animate-spin" /> Loading activity…
+              </div>
             </div>
           )}
-          {!isLoading && (logs ?? []).length === 0 && (
+          {!isLoading && isError && (
+            <div className="p-8 text-center text-sm">
+              <div className="size-12 mx-auto rounded-full bg-destructive/10 text-destructive grid place-items-center mb-3">
+                <AlertTriangle className="size-6"/>
+              </div>
+              <div className="font-medium text-foreground">Couldn't load audit events.</div>
+              <div className="text-xs text-muted-foreground mt-1">{(error as any)?.message ?? "Unknown error"}</div>
+              <Button size="sm" variant="outline" className="mt-3" onClick={() => refetch()}>
+                <RefreshCw className="size-3.5 mr-1"/> Retry
+              </Button>
+            </div>
+          )}
+          {!isLoading && !isError && (logs ?? []).length === 0 && (
             <div className="p-8 text-center text-sm text-muted-foreground">
+              <div className="size-12 mx-auto rounded-full bg-muted grid place-items-center mb-3">
+                <Inbox className="size-6 text-muted-foreground"/>
+              </div>
               <div className="font-medium text-foreground">No activity recorded for this plant.</div>
               <div className="mt-1">Date range: <b>{from}</b> → <b>{to}</b>{tableFilter !== "all" && <> · Module: <b>{tableLabel[tableFilter]}</b></>}{deptFilter !== "all" && <> · Department filter applied</>}.</div>
               <div className="mt-2 text-xs">Try widening the date range, switching to a different plant, or clearing the module/department filters. New events appear here as users approve, reject, scrap, or adjust inventory for this plant.</div>
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <Button size="sm" variant="outline" onClick={() => { setFrom(new Date(Date.now()-90*86400000).toISOString().slice(0,10)); }}>Last 90 days</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setDeptFilter("all"); setTableFilter("all"); }}>Clear filters</Button>
+                <Button size="sm" variant="ghost" onClick={() => refetch()}><RefreshCw className="size-3.5 mr-1"/>Retry</Button>
+              </div>
             </div>
           )}
           {!isLoading && isFetching && (logs ?? []).length > 0 && (
