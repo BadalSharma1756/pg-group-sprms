@@ -44,14 +44,14 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
         collapsed ? "w-16" : "w-64",
       )}
     >
-      <div className={cn("flex items-center gap-3 border-b border-sidebar-border h-16", collapsed ? "justify-center px-2" : "px-5")}>
-        <div className="size-9 rounded-md bg-white grid place-items-center shrink-0 p-1 ring-1 ring-sidebar-border">
+      <div className={cn("flex items-center gap-3 border-b border-sidebar-border h-16 bg-gradient-to-r from-primary/5 to-transparent", collapsed ? "justify-center px-2" : "px-5")}>
+        <div className="size-9 rounded-md bg-primary/10 grid place-items-center shrink-0 p-1 ring-1 ring-primary/20">
           <img src={logo.url} alt="PG" className="size-full object-contain" />
         </div>
         {!collapsed && (
           <div className="min-w-0">
-            <div className="font-semibold tracking-tight text-sm truncate">SPRMS</div>
-            <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">SS Pipe Ricco · v1.0</div>
+            <div className="font-bold tracking-tight text-sm truncate text-foreground">SPRMS</div>
+            <div className="text-[10px] uppercase tracking-wider text-primary/80 font-medium">SS Pipe Ricco · v1.0</div>
           </div>
         )}
       </div>
