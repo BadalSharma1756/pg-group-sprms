@@ -25,12 +25,9 @@ function Page() {
             <DataTable rows={(stock ?? []).map((r:any,i:number)=>({ id:`${r.material_id}-${r.plant_id}-${i}`, ...r }))} columns={[
               { header:"Material", cell:(r:any)=> `${r.material_code} — ${r.material_name}` },
               { header:"Plant", cell:(r:any)=> r.plant_code },
-              { header:"In", cell:(r:any)=> fmtNum(r.total_in,3) },
-              { header:"Out", cell:(r:any)=> fmtNum(r.total_out,3) },
-              { header:"Stock", cell:(r:any)=> <span className={Number(r.current_stock)<=0?"text-destructive font-semibold":"font-semibold"}>{fmtNum(r.current_stock,3)}</span> },
+              { header:"Current stock", cell:(r:any)=> <span className={Number(r.current_stock)<=0?"text-destructive font-semibold":"font-semibold"}>{fmtNum(r.current_stock,3)}</span> },
               { header:"Reorder", cell:(r:any)=> fmtNum(r.reorder_level) },
-              { header:"Status", cell:(r:any)=> Number(r.current_stock) <= Number(r.reorder_level)
-                ? <Badge variant="destructive">Low</Badge> : <Badge>OK</Badge> },
+              { header:"Status", cell:(r:any)=> r.is_low ? <Badge variant="destructive">Low</Badge> : <Badge>OK</Badge> },
             ]} empty="No stock records yet" />
           </TabsContent>
           <TabsContent value="ledger" className="mt-4">
