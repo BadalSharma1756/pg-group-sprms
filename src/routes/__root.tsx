@@ -1,4 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import {
   Outlet,
   Link,
@@ -13,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
 import { Toaster } from "sonner";
+import { OfflineIndicator } from "../components/offline-indicator";
 
 function NotFoundComponent() {
   return (
@@ -117,13 +120,25 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const persister = typeof window !== "undefined"
+    ? createSyncStoragePersister({ storage: window.localStorage, key: "ss-erp-cache" })
+    : null;
 
+  if (!persister) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider><Outlet /><Toaster position="top-right" richColors closeButton /></AuthProvider>
+      </QueryClientProvider>
+    );
+  }
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient}
+      persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24, buster: "v1" }}>
       <AuthProvider>
         <Outlet />
+        <OfflineIndicator />
         <Toaster position="top-right" richColors closeButton />
       </AuthProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
