@@ -78,11 +78,11 @@ function LayoutInner() {
   };
   return (
     <div className="min-h-screen flex flex-col bg-background" style={{ ["--app-header-h" as any]: "64px" }}>
-      <header className="h-16 sticky top-0 z-50 bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground border-b border-primary/40 flex items-center gap-3 px-3 md:px-5 shadow-md">
+      <header className="h-16 sticky top-0 z-50 bg-white text-slate-800 border-b border-slate-200 flex items-center gap-3 px-3 md:px-5 shadow-sm transition-shadow duration-200 hover:shadow-md backdrop-saturate-150">
         <button
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="size-9 grid place-items-center rounded-md text-primary-foreground/90 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          className="size-9 grid place-items-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
         >
           <Menu className="size-5" />
         </button>
@@ -91,8 +91,8 @@ function LayoutInner() {
             <img src={logo.url} alt="PG" className="size-full object-contain drop-shadow" />
           </div>
           <div className="min-w-0 hidden sm:block">
-            <div className="font-bold tracking-tight text-base leading-tight truncate text-primary-foreground">SPRMS</div>
-            <div className="text-[10px] uppercase tracking-wider text-primary-foreground/80 font-medium truncate">SS Pipe Ricco Management System</div>
+            <div className="font-bold tracking-tight text-base leading-tight truncate text-slate-900">SPRMS</div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium truncate">SS Pipe Ricco Management System</div>
           </div>
         </div>
         <div className="flex-1" />
