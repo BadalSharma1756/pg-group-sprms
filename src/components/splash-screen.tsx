@@ -2,18 +2,17 @@ import { useEffect, useState } from "react";
 import logo from "@/assets/pg-logo.png.asset.json";
 
 export function SplashScreen() {
-  const [show, setShow] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !sessionStorage.getItem("sprms-splash-shown");
-  });
+  const [show, setShow] = useState(false);
   useEffect(() => {
-    if (!show) return;
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("sprms-splash-shown")) return;
+    setShow(true);
     const t = setTimeout(() => {
       sessionStorage.setItem("sprms-splash-shown", "1");
       setShow(false);
     }, 2400);
     return () => clearTimeout(t);
-  }, [show]);
+  }, []);
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-gradient-to-br from-background via-background to-primary/10 animate-fade-in">
