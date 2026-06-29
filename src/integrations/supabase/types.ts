@@ -892,6 +892,7 @@ export type Database = {
           department_id: string
           id: string
           material_id: string
+          operator: string | null
           operator_id: string | null
           plant_id: string
           quantity: number
@@ -906,6 +907,7 @@ export type Database = {
           department_id: string
           id?: string
           material_id: string
+          operator?: string | null
           operator_id?: string | null
           plant_id: string
           quantity: number
@@ -920,6 +922,7 @@ export type Database = {
           department_id?: string
           id?: string
           material_id?: string
+          operator?: string | null
           operator_id?: string | null
           plant_id?: string
           quantity?: number

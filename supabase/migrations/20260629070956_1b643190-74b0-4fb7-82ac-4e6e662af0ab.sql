@@ -1,0 +1,3 @@
+ALTER TABLE public.scrap_entries
+  ADD COLUMN IF NOT EXISTS recovery_value NUMERIC(14,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS operator TEXT;
