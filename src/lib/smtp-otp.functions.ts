@@ -369,13 +369,21 @@ export const devBypassSignIn = createServerFn({ method: "POST" })
 
     let email = data.email?.toLowerCase();
     if (!email) {
-      const { data: admin } = await supabaseAdmin
+      const { data: adminRole } = await supabaseAdmin
         .from("user_roles")
-        .select("user_id, profiles!inner(email)")
+        .select("user_id")
         .eq("role", "super_admin")
         .limit(1)
         .maybeSingle();
-      email = (admin as any)?.profiles?.email?.toLowerCase();
+      const adminId = (adminRole as any)?.user_id;
+      if (adminId) {
+        const { data: prof } = await supabaseAdmin
+          .from("profiles")
+          .select("email")
+          .eq("id", adminId)
+          .maybeSingle();
+        email = (prof as any)?.email?.toLowerCase();
+      }
     }
     if (!email) throw new Error("No super_admin user found for dev bypass");
 
