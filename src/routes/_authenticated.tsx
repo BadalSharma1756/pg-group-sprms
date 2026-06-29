@@ -71,7 +71,7 @@ function LayoutInner() {
   };
   return (
     <div className="min-h-screen flex flex-col bg-background" style={{ ["--app-header-h" as any]: "64px" }}>
-      <header className="h-16 sticky top-0 z-50 bg-card border-b flex items-center gap-3 px-3 md:px-5 shadow-sm">
+      <header className="h-16 sticky top-0 z-50 bg-gradient-to-r from-primary/[0.06] via-card to-primary/[0.06] border-b border-primary/15 flex items-center gap-3 px-3 md:px-5 shadow-sm">
         <button
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -80,7 +80,7 @@ function LayoutInner() {
           <Menu className="size-5" />
         </button>
         <div className="flex items-center gap-3 min-w-0">
-          <div className="size-11 rounded-lg bg-white grid place-items-center shrink-0 p-1 ring-1 ring-primary/20 shadow-sm">
+          <div className="size-14 rounded-xl bg-primary/10 grid place-items-center shrink-0 p-1.5 ring-2 ring-primary/25 shadow-md">
             <img src={logo.url} alt="PG" className="size-full object-contain" />
           </div>
           <div className="min-w-0 hidden sm:block">
