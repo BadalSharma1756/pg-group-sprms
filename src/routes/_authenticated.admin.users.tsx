@@ -13,9 +13,10 @@ import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Shield, Trash2 } from "lucide-react";
+import { Plus, Shield, Trash2, Send } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { createUser, setUserRole, setUserPlants, deleteUser } from "@/lib/users.functions";
+import { adminSendOtp } from "@/lib/auth-events.functions";
 
 const ROLES = [
   "super_admin","plant_admin","production_manager","production_operator",
@@ -47,6 +48,7 @@ function Inner() {
   const setRole = useServerFn(setUserRole);
   const setPlants = useServerFn(setUserPlants);
   const del = useServerFn(deleteUser);
+  const sendOtp = useServerFn(adminSendOtp);
 
   const { data: profiles } = useQuery({
     queryKey: ["admin-profiles"],
@@ -78,8 +80,15 @@ function Inner() {
 
   const mCreate = useMutation({
     mutationFn: async () => create({ data: f }),
-    onSuccess: () => {
-      toast.success(`User created — they can sign in with an OTP sent to ${f.email}`);
+    onSuccess: async (res: any) => {
+      // Auto-dispatch the first OTP to the registered email and report delivery
+      try {
+        toast.message("Sending welcome OTP…");
+        const r: any = await sendOtp({ data: { email: f.email } });
+        toast.success(`User created — OTP ${r.status} to ${f.email}`);
+      } catch (e: any) {
+        toast.warning(`User created but OTP delivery failed: ${e.message}`);
+      }
       setOpen(false);
       setF({ email:"", full_name:"", role:"viewer", plant_ids:[] });
       qc.invalidateQueries({ queryKey:["admin-profiles"] });
@@ -87,6 +96,12 @@ function Inner() {
       qc.invalidateQueries({ queryKey:["admin-user-plants"] });
     },
     onError: (e:any) => toast.error(e.message),
+  });
+
+  const mOtp = useMutation({
+    mutationFn: async (email: string) => sendOtp({ data: { email } }) as any,
+    onSuccess: (r: any, email) => toast.success(`OTP ${r.status} to ${email}`),
+    onError: (e: any) => toast.error(`OTP send failed: ${e.message}`),
   });
 
   const mRole = useMutation({
@@ -164,9 +179,15 @@ function Inner() {
           ) },
           { header:"Plant access", cell:(r:any)=> <PlantPicker plants={plants ?? []} selected={plantsByUser.get(r.id) ?? []} onSave={(ids)=>mPlants.mutate({user_id:r.id, plant_ids:ids})} /> },
           { header:"", cell:(r:any)=>(
-            <Button size="sm" variant="ghost" onClick={()=>{ if (confirm(`Delete ${r.email}?`)) mDel.mutate(r.id); }}>
-              <Trash2 className="size-4 text-destructive"/>
-            </Button>
+            <div className="flex items-center justify-end gap-1">
+              <Button size="sm" variant="outline" disabled={mOtp.isPending}
+                onClick={()=>mOtp.mutate(r.email)}>
+                <Send className="size-3.5 mr-1"/>Send OTP
+              </Button>
+              <Button size="sm" variant="ghost" onClick={()=>{ if (confirm(`Delete ${r.email}?`)) mDel.mutate(r.id); }}>
+                <Trash2 className="size-4 text-destructive"/>
+              </Button>
+            </div>
           ) },
         ]} />
       </PageBody>
