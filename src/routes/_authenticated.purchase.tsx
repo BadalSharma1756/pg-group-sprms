@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DataTable } from "@/components/data-table";
-import { Badge } from "@/components/ui/badge";
 import { Plus, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum, fmtCurrency, fmtDate } from "@/lib/format";
