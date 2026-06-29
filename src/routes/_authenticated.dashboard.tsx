@@ -167,18 +167,22 @@ function Dashboard() {
             ]} />
         } />
       <PageBody>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
-          <Kpi icon={Boxes} label="Today's Consumption (m)" value={fmtNum(k?.todaysConsumption)} />
-          <Kpi icon={ShoppingCart} label="Today's Purchase Value" value={"₹ " + fmtNum(k?.todaysPurchaseAmt)} />
-          <Kpi icon={AlertTriangle} label="Low Stock Items" value={fmtNum(k?.lowStock, 0)} tone={k && k.lowStock > 0 ? "warn" : "ok"} />
-          <Kpi icon={ClipboardList} label="Pending Approvals" value={fmtNum(k?.pendingApprovals, 0)} tone={k && k.pendingApprovals > 0 ? "warn" : "ok"} />
-          <Kpi icon={Clock} label="Pending Purchase Qty" value={fmtNum(k?.pendingPurchaseQty)} hint={`${k?.pendingPurchaseOrders ?? 0} open PO(s)`} />
-          <Kpi icon={Package} label="Products" value={fmtNum(k?.products, 0)} />
-          <Kpi icon={Wrench} label="Materials" value={fmtNum(k?.materials, 0)} />
-          <Kpi icon={Truck} label="Suppliers" value={fmtNum(k?.suppliers, 0)} />
-          <Kpi icon={Building2} label="Plants" value={fmtNum(k?.plants, 0)} />
+        <div className="sticky top-14 z-20 -mx-4 px-4 py-2 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b">
+          <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:thin]">
+            <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
+            <Kpi icon={Boxes} label="Today's Consumption (m)" value={fmtNum(k?.todaysConsumption)} />
+            <Kpi icon={ShoppingCart} label="Today's Purchase Value" value={"₹ " + fmtNum(k?.todaysPurchaseAmt)} />
+            <Kpi icon={AlertTriangle} label="Low Stock Items" value={fmtNum(k?.lowStock, 0)} tone={k && k.lowStock > 0 ? "warn" : "ok"} />
+            <Kpi icon={ClipboardList} label="Pending Approvals" value={fmtNum(k?.pendingApprovals, 0)} tone={k && k.pendingApprovals > 0 ? "warn" : "ok"} />
+            <Kpi icon={Clock} label="Pending Purchase Qty" value={fmtNum(k?.pendingPurchaseQty)} hint={`${k?.pendingPurchaseOrders ?? 0} open PO(s)`} />
+            <Kpi icon={Package} label="Products" value={fmtNum(k?.products, 0)} />
+            <Kpi icon={Wrench} label="Materials" value={fmtNum(k?.materials, 0)} />
+            <Kpi icon={Truck} label="Suppliers" value={fmtNum(k?.suppliers, 0)} />
+            <Kpi icon={Building2} label="Plants" value={fmtNum(k?.plants, 0)} />
+          </div>
         </div>
+
+        <RecentActivity plantIds={plantIds} />
 
         <div className="grid lg:grid-cols-2 gap-4">
           <Card>
