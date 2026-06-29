@@ -57,26 +57,14 @@ function Page() {
       const { error } = await supabase.from("production_entries").insert({
         entry_date: f.entry_date, shift: f.shift, product_id: f.product_id,
         plant_id: product.plant_id, department_id: product.department_id, material_id: product.material_id,
-        quantity: f.quantity, remarks: f.remarks,
+        quantity: f.quantity, remarks: f.remarks, status: "approved",
       });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Production booked — consumption auto-calculated"); setOpen(false);
+    onSuccess: () => { toast.success("Production booked — inventory updated"); setOpen(false);
       setF({ entry_date:new Date().toISOString().slice(0,10), shift:"morning", product_id:"", quantity:0, remarks:"" });
       qc.invalidateQueries({queryKey:["production"]});
     },
-    onError:(e:any)=>toast.error(e.message),
-  });
-
-  const approve = useMutation({
-    mutationFn: async (id:string) => { const { error } = await supabase.from("production_entries").update({ status:"approved", approved_at: new Date().toISOString() }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Approved — inventory updated"); qc.invalidateQueries({queryKey:["production"]}); },
-    onError:(e:any)=>toast.error(e.message),
-  });
-
-  const reject = useMutation({
-    mutationFn: async (id:string) => { const { error } = await supabase.from("production_entries").update({ status:"rejected" }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Entry rejected"); qc.invalidateQueries({queryKey:["production"]}); },
     onError:(e:any)=>toast.error(e.message),
   });
 
