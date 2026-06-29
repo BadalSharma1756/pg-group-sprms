@@ -52,6 +52,19 @@ export function EntryListView<T extends { id: string | number }>({
   const [active, setActive] = useState<T | null>(null);
   const [query, setQuery] = useState("");
 
+  const tabKey = (id: string | number) => `entry-tab:${tableName ?? "x"}:${id}`;
+  const initialTab = (id: string | number) => {
+    if (typeof window === "undefined") return "details";
+    const v = window.localStorage.getItem(tabKey(id));
+    return v === "ledger" || v === "attachments" ? v : "details";
+  };
+  const [tab, setTab] = useState<string>("details");
+  const openEntry = (r: T) => { setTab(initialTab(r.id)); setActive(r); };
+  const onTabChange = (v: string) => {
+    setTab(v);
+    if (active && typeof window !== "undefined") window.localStorage.setItem(tabKey(active.id), v);
+  };
+
   const setMode = (m: "table" | "grid") => {
     setView(m);
     if (typeof window !== "undefined" && storageKey) window.localStorage.setItem(storageKey, m);
@@ -118,10 +131,10 @@ export function EntryListView<T extends { id: string | number }>({
               ) : filtered.length === 0 ? (
                 <TableRow><TableCell colSpan={columns.length + 1} className="text-center text-muted-foreground py-10">{empty}</TableCell></TableRow>
               ) : filtered.map((r) => (
-                <TableRow key={r.id}>
+                <TableRow key={r.id} data-row-id={String(r.id)}>
                   {columns.map((c, i) => <TableCell key={i} className={cn("tabular-nums", c.className)}>{c.cell(r)}</TableCell>)}
                   <TableCell className="text-right">
-                    <Button size="sm" variant="ghost" onClick={() => setActive(r)} className="h-7 px-2 text-primary hover:text-primary">
+                    <Button size="sm" variant="ghost" onClick={() => openEntry(r)} className="h-7 px-2 text-primary hover:text-primary" data-testid="entry-view-btn">
                       <Eye className="size-3.5 mr-1" /> View
                     </Button>
                   </TableCell>
@@ -139,7 +152,7 @@ export function EntryListView<T extends { id: string | number }>({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {filtered.map((r) => (
-                <div key={r.id} className="rounded-lg border bg-card p-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                <div key={r.id} data-row-id={String(r.id)} className="rounded-lg border bg-card p-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
                   <div className="space-y-1.5">
                     {columns.slice(0, 5).map((c, i) => (
                       <div key={i} className={cn("flex items-start justify-between gap-2 text-xs", i === 0 && "pb-1.5 mb-1 border-b border-border/60")}>
@@ -149,7 +162,7 @@ export function EntryListView<T extends { id: string | number }>({
                     ))}
                   </div>
                   <div className="mt-3 pt-2 border-t border-border/60 flex justify-end">
-                    <Button size="sm" variant="outline" onClick={() => setActive(r)} className="h-7 text-xs">
+                    <Button size="sm" variant="outline" onClick={() => openEntry(r)} className="h-7 text-xs" data-testid="entry-view-btn">
                       <Eye className="size-3.5 mr-1" /> View details
                     </Button>
                   </div>
@@ -161,14 +174,14 @@ export function EntryListView<T extends { id: string | number }>({
       )}
 
       <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl" data-testid="entry-view-dialog">
           <DialogHeader><DialogTitle>{detailTitle}</DialogTitle></DialogHeader>
           {active && (
-            <Tabs defaultValue="details" className="w-full">
+            <Tabs value={tab} onValueChange={onTabChange} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="details"><FileText className="size-3.5 mr-1.5" />Entry details</TabsTrigger>
-                <TabsTrigger value="ledger"><PackageSearch className="size-3.5 mr-1.5" />Inventory ledger</TabsTrigger>
-                <TabsTrigger value="attachments"><Paperclip className="size-3.5 mr-1.5" />Attachments</TabsTrigger>
+                <TabsTrigger value="details" data-testid="tab-details"><FileText className="size-3.5 mr-1.5" />Entry details</TabsTrigger>
+                <TabsTrigger value="ledger" data-testid="tab-ledger"><PackageSearch className="size-3.5 mr-1.5" />Inventory ledger</TabsTrigger>
+                <TabsTrigger value="attachments" data-testid="tab-attachments"><Paperclip className="size-3.5 mr-1.5" />Attachments</TabsTrigger>
               </TabsList>
               <TabsContent value="details" className="mt-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -216,10 +229,10 @@ function InventoryImpact({ tableName, recordId }: { tableName?: string; recordId
   const totOut = data.reduce((s: number, r: any) => s + Number(r.qty_out || 0), 0);
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-2 text-xs">
-        <div className="rounded-md border bg-emerald-50 p-2"><div className="text-emerald-700/80 flex items-center gap-1"><ArrowDownToLine className="size-3" /> Total In</div><div className="font-semibold text-emerald-900 tabular-nums">{fmtNum(totIn)}</div></div>
-        <div className="rounded-md border bg-rose-50 p-2"><div className="text-rose-700/80 flex items-center gap-1"><ArrowUpFromLine className="size-3" /> Total Out</div><div className="font-semibold text-rose-900 tabular-nums">{fmtNum(totOut)}</div></div>
-        <div className="rounded-md border bg-slate-50 p-2"><div className="text-slate-600">Lines</div><div className="font-semibold text-slate-900 tabular-nums">{data.length}</div></div>
+      <div className="grid grid-cols-3 gap-2 text-xs" data-testid="ledger-totals" data-total-in={totIn} data-total-out={totOut} data-line-count={data.length}>
+        <div className="rounded-md border bg-emerald-50 p-2"><div className="text-emerald-700/80 flex items-center gap-1"><ArrowDownToLine className="size-3" /> Total In</div><div className="font-semibold text-emerald-900 tabular-nums" data-testid="ledger-total-in">{fmtNum(totIn)}</div></div>
+        <div className="rounded-md border bg-rose-50 p-2"><div className="text-rose-700/80 flex items-center gap-1"><ArrowUpFromLine className="size-3" /> Total Out</div><div className="font-semibold text-rose-900 tabular-nums" data-testid="ledger-total-out">{fmtNum(totOut)}</div></div>
+        <div className="rounded-md border bg-slate-50 p-2"><div className="text-slate-600">Lines</div><div className="font-semibold text-slate-900 tabular-nums" data-testid="ledger-line-count">{data.length}</div></div>
       </div>
       <div className="rounded-lg border overflow-hidden max-h-80 overflow-y-auto">
         <Table>
