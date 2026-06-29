@@ -7,22 +7,27 @@ import { fmtNum } from "@/lib/format";
 import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
 import { ExportMenu } from "@/components/export-menu";
+import { useScopedPlantIds, useScope } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — SS Pipe ERP" }] }),
   component: Dashboard,
 });
 
-function useKpi() {
+function useKpi(plantIds: string[]) {
   return useQuery({
-    queryKey: ["dashboard-kpi"],
+    queryKey: ["dashboard-kpi", plantIds.join(",")],
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
+      const inPlants = <T extends { in: (col: string, vals: any[]) => any }>(q: T) =>
+        plantIds.length ? q.in("plant_id", plantIds) : q;
       const [prod, pur, mat, prods, sup, plants, stock, low] = await Promise.all([
-        supabase.from("production_entries").select("total_meter_consumed").eq("entry_date", today),
-        supabase.from("purchase_orders").select("total_amount,received_qty").eq("po_date", today),
+        inPlants(supabase.from("production_entries").select("total_meter_consumed,plant_id").eq("entry_date", today)),
+        inPlants(supabase.from("purchase_orders").select("total_amount,received_qty,plant_id").eq("po_date", today)),
         supabase.from("materials").select("id", { count: "exact", head: true }),
-        supabase.from("products").select("id", { count: "exact", head: true }),
+        plantIds.length
+          ? supabase.from("products").select("id", { count: "exact", head: true }).in("plant_id", plantIds)
+          : supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("suppliers").select("id", { count: "exact", head: true }),
         supabase.from("plants").select("id", { count: "exact", head: true }),
         supabase.from("v_current_stock").select("current_stock"),
@@ -46,14 +51,16 @@ function useKpi() {
   });
 }
 
-function useCharts() {
+function useCharts(plantIds: string[]) {
   return useQuery({
-    queryKey: ["dashboard-charts"],
+    queryKey: ["dashboard-charts", plantIds.join(",")],
     queryFn: async () => {
       const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+      const prodQ = supabase.from("production_entries").select("entry_date,total_meter_consumed,plant_id").gte("entry_date", since);
+      const purQ = supabase.from("purchase_orders").select("po_date,total_amount,plant_id").gte("po_date", since);
       const [{ data: prod }, { data: pur }] = await Promise.all([
-        supabase.from("production_entries").select("entry_date,total_meter_consumed").gte("entry_date", since),
-        supabase.from("purchase_orders").select("po_date,total_amount").gte("po_date", since),
+        plantIds.length ? prodQ.in("plant_id", plantIds) : prodQ,
+        plantIds.length ? purQ.in("plant_id", plantIds) : purQ,
       ]);
       const map = new Map<string, { date: string; production: number; purchase: number }>();
       for (let i = 13; i >= 0; i--) {
@@ -89,11 +96,15 @@ function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: strin
 }
 
 function Dashboard() {
-  const { data: k } = useKpi();
-  const { data: chart } = useCharts();
+  const plantIds = useScopedPlantIds();
+  const { data: k } = useKpi(plantIds);
+  const { data: chart } = useCharts(plantIds);
+  const { locations, filteredPlants, locationId, plantId } = useScope();
+  const locName = locations.find((l) => l.id === locationId)?.name ?? "All Locations";
+  const plantName = filteredPlants.find((p) => p.id === plantId)?.name ?? "All Plants";
   return (
     <>
-      <PageHeader title="Operations Dashboard" subtitle="Live shop-floor KPIs · auto-refreshed from the inventory ledger"
+      <PageHeader title="Operations Dashboard" subtitle={`Scope · ${locName} → ${plantName}`}
         actions={
           <ExportMenu filename="dashboard_kpis" title="Dashboard KPIs"
             rows={k ? [
