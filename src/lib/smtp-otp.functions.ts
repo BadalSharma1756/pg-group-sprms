@@ -2,9 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { recordOtpFailureInternal } from "./auth-events.functions";
-import { createClient } from "@supabase/supabase-js";
 
 const EmailInput = z.object({ email: z.string().email() });
+const ALLOWED_DOMAIN = "pgel.in";
+function isAllowedEmail(email: string) {
+  return email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN);
+}
 
 const LOCKOUT_WINDOW_MIN = 15;
 const LOCKOUT_DURATION_MIN = 15;
@@ -65,6 +68,10 @@ function buildHtml(code: string, fromName: string) {
 async function generateAndSendOtp(email: string, trigger: "user" | "admin", actorId?: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const lower = email.toLowerCase();
+
+  if (!isAllowedEmail(lower)) {
+    return { ok: false as const, status: "blocked" as const, message: `Only @${ALLOWED_DOMAIN} email addresses are allowed.` };
+  }
 
   const lock = await checkLocked(supabaseAdmin, lower);
   if (lock.locked) {
@@ -185,12 +192,17 @@ export const verifyOtpEmail = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = data.email.toLowerCase();
 
+    if (!isAllowedEmail(email)) {
+      return { ok: false as const, message: `Only @${ALLOWED_DOMAIN} email addresses are allowed.` };
+    }
+
     // Reject early if currently locked — do not record a failure for it.
     const lock = await checkLocked(supabaseAdmin, email);
     if (lock.locked) {
       return { ok: false as const, locked: true as const, unlock_at: lock.unlock_at };
     }
 
+    const { createClient } = await import("@supabase/supabase-js");
     const supa = createClient(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_PUBLISHABLE_KEY!,
