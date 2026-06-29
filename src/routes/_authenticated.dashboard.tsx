@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fmtNum, fmtDate } from "@/lib/format";
+import { fmtNum } from "@/lib/format";
 import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2 } from "lucide-react";
 import { ExportMenu } from "@/components/export-menu";
 import { useScopedPlantIds, useScope } from "@/lib/scope";
