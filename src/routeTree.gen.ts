@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedScrapRouteImport } from './routes/_authenticated.scrap'
 import { Route as AuthenticatedPurchaseRouteImport } from './routes/_authenticated.purchase'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated.production'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated.inventory'
@@ -37,6 +38,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedScrapRoute = AuthenticatedScrapRouteImport.update({
+  id: '/scrap',
+  path: '/scrap',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPurchaseRoute = AuthenticatedPurchaseRouteImport.update({
   id: '/purchase',
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/inventory': typeof AuthenticatedInventoryRoute
   '/production': typeof AuthenticatedProductionRoute
   '/purchase': typeof AuthenticatedPurchaseRoute
+  '/scrap': typeof AuthenticatedScrapRoute
   '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/masters/materials': typeof AuthenticatedMastersMaterialsRoute
   '/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/inventory': typeof AuthenticatedInventoryRoute
   '/production': typeof AuthenticatedProductionRoute
   '/purchase': typeof AuthenticatedPurchaseRoute
+  '/scrap': typeof AuthenticatedScrapRoute
   '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/masters/materials': typeof AuthenticatedMastersMaterialsRoute
   '/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/production': typeof AuthenticatedProductionRoute
   '/_authenticated/purchase': typeof AuthenticatedPurchaseRoute
+  '/_authenticated/scrap': typeof AuthenticatedScrapRoute
   '/_authenticated/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/_authenticated/masters/materials': typeof AuthenticatedMastersMaterialsRoute
   '/_authenticated/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/production'
     | '/purchase'
+    | '/scrap'
     | '/masters/departments'
     | '/masters/materials'
     | '/masters/pipe-sizes'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/production'
     | '/purchase'
+    | '/scrap'
     | '/masters/departments'
     | '/masters/materials'
     | '/masters/pipe-sizes'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inventory'
     | '/_authenticated/production'
     | '/_authenticated/purchase'
+    | '/_authenticated/scrap'
     | '/_authenticated/masters/departments'
     | '/_authenticated/masters/materials'
     | '/_authenticated/masters/pipe-sizes'
@@ -225,6 +237,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/scrap': {
+      id: '/_authenticated/scrap'
+      path: '/scrap'
+      fullPath: '/scrap'
+      preLoaderRoute: typeof AuthenticatedScrapRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/purchase': {
       id: '/_authenticated/purchase'
@@ -312,6 +331,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
   AuthenticatedPurchaseRoute: typeof AuthenticatedPurchaseRoute
+  AuthenticatedScrapRoute: typeof AuthenticatedScrapRoute
   AuthenticatedMastersDepartmentsRoute: typeof AuthenticatedMastersDepartmentsRoute
   AuthenticatedMastersMaterialsRoute: typeof AuthenticatedMastersMaterialsRoute
   AuthenticatedMastersPipeSizesRoute: typeof AuthenticatedMastersPipeSizesRoute
@@ -326,6 +346,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
   AuthenticatedPurchaseRoute: AuthenticatedPurchaseRoute,
+  AuthenticatedScrapRoute: AuthenticatedScrapRoute,
   AuthenticatedMastersDepartmentsRoute: AuthenticatedMastersDepartmentsRoute,
   AuthenticatedMastersMaterialsRoute: AuthenticatedMastersMaterialsRoute,
   AuthenticatedMastersPipeSizesRoute: AuthenticatedMastersPipeSizesRoute,
