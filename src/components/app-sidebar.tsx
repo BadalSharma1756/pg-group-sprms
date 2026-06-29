@@ -12,7 +12,7 @@ const groups: { label: string; items: { to: string; icon: any; label: string }[]
     { to: "/production", icon: Factory, label: "Production" },
     { to: "/purchase", icon: ShoppingCart, label: "Purchase" },
     { to: "/inventory", icon: Boxes, label: "Inventory" },
-    { to: "/gap", icon: ClipboardCheck, label: "Gap Verification" },
+    { to: "/gap-verification", icon: ClipboardCheck, label: "Gap Verification" },
     { to: "/scrap", icon: Trash2, label: "Scrap" },
   ]},
   { label: "Master Data", items: [
@@ -25,9 +25,6 @@ const groups: { label: string; items: { to: string; icon: any; label: string }[]
   ]},
   { label: "Insights", items: [
     { to: "/reports", icon: BarChart3, label: "Reports" },
-    { to: "/audit", icon: ScrollText, label: "Audit Logs" },
-    { to: "/users", icon: Users, label: "Users & Roles" },
-    { to: "/settings", icon: Settings, label: "Settings" },
   ]},
 ];
 
