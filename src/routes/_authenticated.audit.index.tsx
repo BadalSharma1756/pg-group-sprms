@@ -5,7 +5,7 @@ import { PageBody, PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, ArrowRight } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/audit")({ component: Page });
+export const Route = createFileRoute("/_authenticated/audit/")({ component: Page });
 
 function Page() {
   const { data: plants } = useQuery({
