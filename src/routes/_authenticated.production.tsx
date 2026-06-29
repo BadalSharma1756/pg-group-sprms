@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DataTable } from "@/components/data-table";
+import { EntryListView } from "@/components/entry-list-view";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calculator } from "lucide-react";
 import { toast } from "sonner";
@@ -169,15 +169,34 @@ function Page() {
           </div>
         } />
       <PageBody>
-        <DataTable rows={data ?? undefined} columns={[
-          { header:"Date", cell:(r:any)=> fmtDate(r.entry_date) },
-          { header:"Shift", cell:(r:any)=> <Badge variant="outline" className="capitalize">{r.shift}</Badge> },
-          { header:"Product", cell:(r:any)=> r.products ? `${r.products.code} — ${r.products.name}` : "—" },
-          { header:"Plant / Dept", cell:(r:any)=> `${r.plants?.code ?? "—"} / ${r.departments?.code ?? "—"}` },
-          { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
-          { header:"Meters", cell:(r:any)=> fmtNum(r.total_meter_consumed,3) },
-          { header:"6 m / 4 m", cell:(r:any)=> `${fmtNum(r.pipes_consumed_6m,2)} / ${fmtNum(r.pipes_consumed_4m,2)}` },
-        ]} />
+        <EntryListView
+          storageKey="production-view"
+          detailTitle="Production entry"
+          rows={data ?? undefined}
+          columns={[
+            { header:"Product", cell:(r:any)=> r.products ? `${r.products.code} — ${r.products.name}` : "—" },
+            { header:"Date", cell:(r:any)=> fmtDate(r.entry_date) },
+            { header:"Shift", cell:(r:any)=> <Badge variant="outline" className="capitalize">{r.shift}</Badge> },
+            { header:"Plant / Dept", cell:(r:any)=> `${r.plants?.code ?? "—"} / ${r.departments?.code ?? "—"}` },
+            { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
+            { header:"Meters", cell:(r:any)=> fmtNum(r.total_meter_consumed,3) },
+            { header:"6 m / 4 m", cell:(r:any)=> `${fmtNum(r.pipes_consumed_6m,2)} / ${fmtNum(r.pipes_consumed_4m,2)}` },
+          ]}
+          details={[
+            { label:"Product", value:(r:any)=> r.products ? `${r.products.code} — ${r.products.name}` : "—", full:true },
+            { label:"Date", value:(r:any)=> fmtDate(r.entry_date) },
+            { label:"Shift", value:(r:any)=> <span className="capitalize">{r.shift}</span> },
+            { label:"Plant", value:(r:any)=> r.plants?.code ?? "—" },
+            { label:"Department", value:(r:any)=> r.departments?.code ?? "—" },
+            { label:"Quantity", value:(r:any)=> fmtNum(r.quantity) },
+            { label:"Material", value:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—" },
+            { label:"Total meters consumed", value:(r:any)=> fmtNum(r.total_meter_consumed,3) },
+            { label:"6m pipes consumed", value:(r:any)=> fmtNum(r.pipes_consumed_6m,2) },
+            { label:"4m pipes consumed", value:(r:any)=> fmtNum(r.pipes_consumed_4m,2) },
+            { label:"Status", value:(r:any)=> <Badge variant="outline" className="capitalize">{r.status}</Badge> },
+            { label:"Remarks", value:(r:any)=> r.remarks || "—", full:true },
+          ]}
+        />
       </PageBody>
     </>
   );
