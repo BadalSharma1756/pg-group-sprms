@@ -27,6 +27,7 @@ import { Route as AuthenticatedMastersPipeSizesRouteImport } from './routes/_aut
 import { Route as AuthenticatedMastersMaterialsRouteImport } from './routes/_authenticated.masters.materials'
 import { Route as AuthenticatedMastersDepartmentsRouteImport } from './routes/_authenticated.masters.departments'
 import { Route as AuthenticatedAuditPlantIdRouteImport } from './routes/_authenticated.audit.$plantId'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated.admin.users'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -125,6 +126,11 @@ const AuthenticatedAuditPlantIdRoute =
     path: '/$plantId',
     getParentRoute: () => AuthenticatedAuditRoute,
   } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/purchase': typeof AuthenticatedPurchaseRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/scrap': typeof AuthenticatedScrapRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/audit/$plantId': typeof AuthenticatedAuditPlantIdRoute
   '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/masters/materials': typeof AuthenticatedMastersMaterialsRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/purchase': typeof AuthenticatedPurchaseRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/scrap': typeof AuthenticatedScrapRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/audit/$plantId': typeof AuthenticatedAuditPlantIdRoute
   '/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/masters/materials': typeof AuthenticatedMastersMaterialsRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/_authenticated/purchase': typeof AuthenticatedPurchaseRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/scrap': typeof AuthenticatedScrapRoute
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/audit/$plantId': typeof AuthenticatedAuditPlantIdRoute
   '/_authenticated/masters/departments': typeof AuthenticatedMastersDepartmentsRoute
   '/_authenticated/masters/materials': typeof AuthenticatedMastersMaterialsRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/purchase'
     | '/reports'
     | '/scrap'
+    | '/admin/users'
     | '/audit/$plantId'
     | '/masters/departments'
     | '/masters/materials'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/purchase'
     | '/reports'
     | '/scrap'
+    | '/admin/users'
     | '/audit/$plantId'
     | '/masters/departments'
     | '/masters/materials'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/_authenticated/purchase'
     | '/_authenticated/reports'
     | '/_authenticated/scrap'
+    | '/_authenticated/admin/users'
     | '/_authenticated/audit/$plantId'
     | '/_authenticated/masters/departments'
     | '/_authenticated/masters/materials'
@@ -380,6 +392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditPlantIdRouteImport
       parentRoute: typeof AuthenticatedAuditRoute
     }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -403,6 +422,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedPurchaseRoute: typeof AuthenticatedPurchaseRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedScrapRoute: typeof AuthenticatedScrapRoute
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedMastersDepartmentsRoute: typeof AuthenticatedMastersDepartmentsRoute
   AuthenticatedMastersMaterialsRoute: typeof AuthenticatedMastersMaterialsRoute
   AuthenticatedMastersPipeSizesRoute: typeof AuthenticatedMastersPipeSizesRoute
@@ -420,6 +440,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPurchaseRoute: AuthenticatedPurchaseRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedScrapRoute: AuthenticatedScrapRoute,
+  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedMastersDepartmentsRoute: AuthenticatedMastersDepartmentsRoute,
   AuthenticatedMastersMaterialsRoute: AuthenticatedMastersMaterialsRoute,
   AuthenticatedMastersPipeSizesRoute: AuthenticatedMastersPipeSizesRoute,
