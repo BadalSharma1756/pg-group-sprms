@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmtNum } from "@/lib/format";
 import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
+import { ExportMenu } from "@/components/export-menu";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — SS Pipe ERP" }] }),
@@ -92,7 +93,25 @@ function Dashboard() {
   const { data: chart } = useCharts();
   return (
     <>
-      <PageHeader title="Operations Dashboard" subtitle="Live shop-floor KPIs · auto-refreshed from the inventory ledger" />
+      <PageHeader title="Operations Dashboard" subtitle="Live shop-floor KPIs · auto-refreshed from the inventory ledger"
+        actions={
+          <ExportMenu filename="dashboard_kpis" title="Dashboard KPIs"
+            rows={k ? [
+              { label:"Today's Production Entries", value: k.todaysProduction },
+              { label:"Today's Consumption (m)", value: k.todaysConsumption },
+              { label:"Today's Purchase Value (₹)", value: k.todaysPurchaseAmt },
+              { label:"Current Stock", value: k.currentStock },
+              { label:"Low Stock Items", value: k.lowStock },
+              { label:"Products", value: k.products },
+              { label:"Materials", value: k.materials },
+              { label:"Suppliers", value: k.suppliers },
+              { label:"Plants", value: k.plants },
+            ] : []}
+            columns={[
+              { header:"Metric", accessor:(r:any)=>r.label },
+              { header:"Value", accessor:(r:any)=>r.value },
+            ]} />
+        } />
       <PageBody>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
