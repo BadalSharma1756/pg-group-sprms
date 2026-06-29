@@ -232,6 +232,10 @@ function AuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+            <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              ⚠️ Dev mode: OTP is temporarily bypassed — signing you in automatically…
+              {bypassError && <div className="mt-1 font-medium text-destructive">Bypass failed: {bypassError}</div>}
+            </div>
             {locked && (
               <div className="mb-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
                 <ShieldAlert className="size-4 mt-0.5 text-destructive" />
