@@ -37,14 +37,22 @@ function Page() {
   type Shift = "morning"|"afternoon"|"night"|"general";
   const [f,setF]=useState<{ entry_date:string; shift:Shift; product_id:string; quantity:number; remarks:string }>({ entry_date:new Date().toISOString().slice(0,10), shift:"morning", product_id:"", quantity:0, remarks:"" });
   const product = (products ?? []).find((p:any)=>p.id===f.product_id);
+
+  const { data: bomRows } = useQuery({
+    queryKey: ["bom-for-product", f.product_id],
+    enabled: !!f.product_id,
+    queryFn: async () => (await supabase.from("product_bom")
+      .select("qty_per_unit, uom, materials(code,name)")
+      .eq("product_id", f.product_id)).data,
+  });
   const preview = useMemo(()=>{
-    if(!product) return null;
-    return {
-      meters: (product.total_meter ?? 0) * f.quantity,
-      p6: (product.pipes_required_6m ?? 0) * f.quantity,
-      p4: (product.pipes_required_4m ?? 0) * f.quantity,
-    };
-  },[product, f.quantity]);
+    if(!product || !bomRows) return null;
+    return (bomRows as any[]).map(b => ({
+      mat: b.materials ? `${b.materials.code} — ${b.materials.name}` : "—",
+      uom: b.uom,
+      consume: Number(b.qty_per_unit) * Number(f.quantity || 0),
+    }));
+  },[product, bomRows, f.quantity]);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -152,13 +160,21 @@ function Page() {
                 </div>
                 <div><Label>Quantity</Label><Input type="number" value={f.quantity} onChange={(e)=>setF({...f, quantity:Number(e.target.value)})}/></div>
                 <div><Label>Remarks</Label><Textarea rows={2} value={f.remarks} onChange={(e)=>setF({...f, remarks:e.target.value})}/></div>
-                {preview && (
+                {preview && preview.length > 0 && (
                   <div className="rounded-md border bg-muted/40 p-3 text-xs">
-                    <div className="flex items-center gap-2 font-medium text-foreground mb-2"><Calculator className="size-4 text-primary"/>Auto consumption</div>
-                    <div className="grid grid-cols-3 gap-2 tabular-nums">
-                      <div><div className="text-muted-foreground">Meters</div><div className="font-semibold">{fmtNum(preview.meters,3)}</div></div>
-                      <div><div className="text-muted-foreground">6 m pipes</div><div className="font-semibold">{fmtNum(preview.p6,3)}</div></div>
-                      <div><div className="text-muted-foreground">4 m pipes</div><div className="font-semibold">{fmtNum(preview.p4,3)}</div></div>
+                    <div className="flex items-center gap-2 font-medium text-foreground mb-2"><Calculator className="size-4 text-primary"/>Auto consumption from BOM</div>
+                    <div className="max-h-48 overflow-auto">
+                      <table className="w-full tabular-nums">
+                        <thead className="text-muted-foreground"><tr><th className="text-left py-1">Material</th><th className="text-right">Per unit</th><th className="text-right">Total</th><th className="text-left pl-2">UOM</th></tr></thead>
+                        <tbody>{preview.map((p,i)=>(
+                          <tr key={i} className="border-t border-border/40">
+                            <td className="py-1">{p.mat}</td>
+                            <td className="text-right">{fmtNum(p.consume / (f.quantity||1), 4)}</td>
+                            <td className="text-right font-semibold">{fmtNum(p.consume, 3)}</td>
+                            <td className="pl-2 text-muted-foreground">{p.uom}</td>
+                          </tr>
+                        ))}</tbody>
+                      </table>
                     </div>
                   </div>
                 )}
