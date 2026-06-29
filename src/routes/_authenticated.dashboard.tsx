@@ -246,10 +246,10 @@ function Dashboard() {
         } />
       <PageBody>
         <div
-          className="sticky z-30 -mx-4 md:-mx-6 px-4 md:px-6 pt-3 pb-3 bg-background border-b shadow-sm"
+          className="lg:sticky z-40 -mx-4 md:-mx-6 px-4 md:px-6 pt-3 pb-3 bg-background border-b shadow-md"
           style={{ top: "var(--app-header-h, 64px)" }}
         >
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
             <Kpi icon={Boxes} label="Today's Consumption (m)" value={fmtNum(k?.todaysConsumption)} />
             <Kpi icon={ShoppingCart} label="Today's Purchase Value" value={"₹ " + fmtNum(k?.todaysPurchaseAmt)} />
