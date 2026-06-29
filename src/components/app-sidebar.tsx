@@ -58,15 +58,18 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
                     to={it.to}
                     title={collapsed ? it.label : undefined}
                     className={cn(
-                      "flex items-center rounded-md text-sm transition-colors",
+                      "relative flex items-center rounded-md text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                       collapsed ? "justify-center px-2 py-2" : "gap-3 px-3 py-2",
                       active
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-sidebar-primary-foreground/80"
                         : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )}
+                    aria-current={active ? "page" : undefined}
                   >
                     <it.icon className="size-4 shrink-0" />
-                    {!collapsed && <span className="truncate">{it.label}</span>}
+                    {!collapsed && (
+                      <span className={cn("truncate", active && "underline underline-offset-4 decoration-2 decoration-sidebar-primary-foreground/70")}>{it.label}</span>
+                    )}
                   </Link>
                 );
               })}
