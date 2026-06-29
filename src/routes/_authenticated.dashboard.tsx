@@ -5,11 +5,13 @@ import { PageHeader, PageBody } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmtNum } from "@/lib/format";
 import { Factory, ShoppingCart, Boxes, AlertTriangle, Package, Wrench, Truck, Building2, ClipboardList, Clock } from "lucide-react";
+import { Activity, Check, X, Plus, Edit, Trash2, ClipboardCheck } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
 import { ExportMenu } from "@/components/export-menu";
 import { useScopedPlantIds, useScope } from "@/lib/scope";
 import { Link } from "@tanstack/react-router";
-import { fmtDate } from "@/lib/format";
+import { fmtDate, fmtDateTime } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — SS Pipe ERP" }] }),
@@ -92,20 +94,98 @@ function useCharts(plantIds: string[]) {
 
 function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: string; value: string; hint?: string; tone?: "default" | "warn" | "ok" }) {
   return (
-    <Card className="relative overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-          <div className={`size-8 grid place-items-center rounded-md ${tone === "warn" ? "bg-destructive/10 text-destructive" : tone === "ok" ? "bg-[color:var(--color-success)]/10 text-[color:var(--color-success)]" : "bg-primary/10 text-primary"}`}><Icon className="size-4" /></div>
+    <Card className="relative overflow-hidden shrink-0 w-[180px] snap-start">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">{label}</div>
+          <div className={`size-7 grid place-items-center rounded-md shrink-0 ${tone === "warn" ? "bg-destructive/10 text-destructive" : tone === "ok" ? "bg-[color:var(--color-success)]/10 text-[color:var(--color-success)]" : "bg-primary/10 text-primary"}`}><Icon className="size-4" /></div>
         </div>
-        <div className="mt-3 text-2xl font-semibold tabular-nums">{value}</div>
-        {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
+        <div className="mt-2 text-xl font-semibold tabular-nums whitespace-nowrap">{value}</div>
+        {hint && <div className="mt-1 text-[10px] text-muted-foreground truncate">{hint}</div>}
+      </CardContent>
+    </Card>
+  );
+}
+
+const auditTableLabel: Record<string,string> = {
+  production_entries: "Production",
+  purchase_orders: "Purchase",
+  scrap_entries: "Scrap",
+  gap_verifications: "Gap Verify",
+  inventory_transactions: "Inventory",
+};
+const auditTableIcon: Record<string, any> = {
+  production_entries: Factory,
+  purchase_orders: ShoppingCart,
+  scrap_entries: Trash2,
+  gap_verifications: ClipboardCheck,
+  inventory_transactions: Boxes,
+};
+function actionBadge(a: string) {
+  if (a === "approved") return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"><Check className="size-3 mr-1"/>Approved</Badge>;
+  if (a === "rejected") return <Badge variant="destructive"><X className="size-3 mr-1"/>Rejected</Badge>;
+  if (a === "create") return <Badge variant="secondary"><Plus className="size-3 mr-1"/>Created</Badge>;
+  if (a === "delete") return <Badge variant="destructive">Deleted</Badge>;
+  return <Badge variant="outline"><Edit className="size-3 mr-1"/>{a}</Badge>;
+}
+
+function RecentActivity({ plantIds }: { plantIds: string[] }) {
+  const { data: logs } = useQuery({
+    queryKey: ["dashboard-activity", plantIds.join(",")],
+    queryFn: async () => {
+      let q = supabase.from("audit_logs")
+        .select("*, profiles:user_id(email,full_name), plants:plant_id(code), departments:department_id(code)")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (plantIds.length) q = q.in("plant_id", plantIds);
+      return (await q).data ?? [];
+    },
+    refetchInterval: 30000,
+  });
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-sm flex items-center gap-2"><Activity className="size-4 text-primary"/>Recent activity — approvals, scrap & inventory adjustments</CardTitle>
+        <Link to="/audit" className="text-xs text-primary hover:underline">View full audit →</Link>
+      </CardHeader>
+      <CardContent>
+        {(!logs || logs.length === 0) ? (
+          <div className="text-sm text-muted-foreground py-4 text-center">No recent activity.</div>
+        ) : (
+          <div className="divide-y -mx-2 max-h-[360px] overflow-y-auto">
+            {logs.map((l: any) => {
+              const Icon = auditTableIcon[l.table_name] ?? Edit;
+              return (
+                <div key={l.id} className="flex items-start gap-3 px-2 py-2.5">
+                  <div className="size-8 rounded-md bg-muted grid place-items-center shrink-0"><Icon className="size-4 text-muted-foreground"/></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {actionBadge(l.action)}
+                      <span className="text-sm font-medium">{auditTableLabel[l.table_name] ?? l.table_name}</span>
+                      {l.entity_label && <span className="text-xs font-mono text-muted-foreground">{l.entity_label}</span>}
+                      {l.old_status && l.new_status && l.old_status !== l.new_status && (
+                        <span className="text-xs text-muted-foreground">{l.old_status} → <b>{l.new_status}</b></span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {fmtDateTime(l.created_at)}
+                      {l.plants?.code && <> · {l.plants.code}</>}
+                      {l.departments?.code && <> · {l.departments.code}</>}
+                      {" · "}{l.profiles?.full_name || l.profiles?.email || "system"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 function Dashboard() {
+  // dashboard
   const plantIds = useScopedPlantIds();
   const { data: k } = useKpi(plantIds);
   const { data: chart } = useCharts(plantIds);
@@ -165,18 +245,22 @@ function Dashboard() {
             ]} />
         } />
       <PageBody>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
-          <Kpi icon={Boxes} label="Today's Consumption (m)" value={fmtNum(k?.todaysConsumption)} />
-          <Kpi icon={ShoppingCart} label="Today's Purchase Value" value={"₹ " + fmtNum(k?.todaysPurchaseAmt)} />
-          <Kpi icon={AlertTriangle} label="Low Stock Items" value={fmtNum(k?.lowStock, 0)} tone={k && k.lowStock > 0 ? "warn" : "ok"} />
-          <Kpi icon={ClipboardList} label="Pending Approvals" value={fmtNum(k?.pendingApprovals, 0)} tone={k && k.pendingApprovals > 0 ? "warn" : "ok"} />
-          <Kpi icon={Clock} label="Pending Purchase Qty" value={fmtNum(k?.pendingPurchaseQty)} hint={`${k?.pendingPurchaseOrders ?? 0} open PO(s)`} />
-          <Kpi icon={Package} label="Products" value={fmtNum(k?.products, 0)} />
-          <Kpi icon={Wrench} label="Materials" value={fmtNum(k?.materials, 0)} />
-          <Kpi icon={Truck} label="Suppliers" value={fmtNum(k?.suppliers, 0)} />
-          <Kpi icon={Building2} label="Plants" value={fmtNum(k?.plants, 0)} />
+        <div className="sticky top-14 z-20 -mx-4 px-4 py-2 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b">
+          <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1 [scrollbar-width:thin]">
+            <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
+            <Kpi icon={Boxes} label="Today's Consumption (m)" value={fmtNum(k?.todaysConsumption)} />
+            <Kpi icon={ShoppingCart} label="Today's Purchase Value" value={"₹ " + fmtNum(k?.todaysPurchaseAmt)} />
+            <Kpi icon={AlertTriangle} label="Low Stock Items" value={fmtNum(k?.lowStock, 0)} tone={k && k.lowStock > 0 ? "warn" : "ok"} />
+            <Kpi icon={ClipboardList} label="Pending Approvals" value={fmtNum(k?.pendingApprovals, 0)} tone={k && k.pendingApprovals > 0 ? "warn" : "ok"} />
+            <Kpi icon={Clock} label="Pending Purchase Qty" value={fmtNum(k?.pendingPurchaseQty)} hint={`${k?.pendingPurchaseOrders ?? 0} open PO(s)`} />
+            <Kpi icon={Package} label="Products" value={fmtNum(k?.products, 0)} />
+            <Kpi icon={Wrench} label="Materials" value={fmtNum(k?.materials, 0)} />
+            <Kpi icon={Truck} label="Suppliers" value={fmtNum(k?.suppliers, 0)} />
+            <Kpi icon={Building2} label="Plants" value={fmtNum(k?.plants, 0)} />
+          </div>
         </div>
+
+        <RecentActivity plantIds={plantIds} />
 
         <div className="grid lg:grid-cols-2 gap-4">
           <Card>
