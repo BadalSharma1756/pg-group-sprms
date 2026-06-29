@@ -130,7 +130,7 @@ function actionBadge(a: string) {
 }
 
 function RecentActivity({ plantIds }: { plantIds: string[] }) {
-  const { data: logs } = useQuery({
+  const { data: logs, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["dashboard-activity", plantIds.join(",")],
     queryFn: async () => {
       let q = supabase.from("audit_logs")
@@ -138,7 +138,9 @@ function RecentActivity({ plantIds }: { plantIds: string[] }) {
         .order("created_at", { ascending: false })
         .limit(20);
       if (plantIds.length) q = q.in("plant_id", plantIds);
-      return (await q).data ?? [];
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
     },
     refetchInterval: 30000,
   });
@@ -149,8 +151,19 @@ function RecentActivity({ plantIds }: { plantIds: string[] }) {
         <Link to="/audit" className="text-xs text-primary hover:underline">View full audit →</Link>
       </CardHeader>
       <CardContent>
-        {(!logs || logs.length === 0) ? (
-          <div className="text-sm text-muted-foreground py-4 text-center">No recent activity.</div>
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground py-6 text-center">Loading activity…</div>
+        ) : isError ? (
+          <div className="text-sm py-6 text-center">
+            <div className="text-destructive font-medium">Couldn't load recent activity.</div>
+            <div className="text-xs text-muted-foreground mt-1">{(error as any)?.message ?? "Unknown error"}</div>
+            <button onClick={() => refetch()} className="text-xs text-primary hover:underline mt-2">Retry</button>
+          </div>
+        ) : (!logs || logs.length === 0) ? (
+          <div className="text-sm text-muted-foreground py-6 text-center">
+            No recent activity for the selected scope.
+            {plantIds.length > 0 && <div className="text-xs mt-1">Try switching to "All locations / All plants" in the scope switcher.</div>}
+          </div>
         ) : (
           <div className="divide-y -mx-2 max-h-[360px] overflow-y-auto">
             {logs.map((l: any) => {
