@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DataTable } from "@/components/data-table";
+import { EntryListView } from "@/components/entry-list-view";
 import { Plus, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum, fmtCurrency, fmtDate } from "@/lib/format";
@@ -165,17 +165,41 @@ function Page() {
           </div>
         } />
       <PageBody>
-        <DataTable rows={data ?? undefined} columns={[
-          { header:"PO #", cell:(r:any)=> <span className="font-mono text-xs">{r.po_no}</span> },
-          { header:"Date", cell:(r:any)=> fmtDate(r.po_date) },
-          { header:"Supplier", cell:(r:any)=> r.suppliers ? `${r.suppliers.code}` : "—" },
-          { header:"Material", cell:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—" },
-          { header:"Plant", cell:(r:any)=> r.plants?.code ?? "—" },
-          { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
-          { header:"Rate", cell:(r:any)=> fmtCurrency(r.rate) },
-          { header:"Total", cell:(r:any)=> fmtCurrency(r.total_amount) },
-          { header:"Pending", cell:(r:any)=> fmtNum(r.pending_qty) },
-        ]} />
+        <EntryListView
+          storageKey="purchase-view"
+          detailTitle="Purchase order"
+          rows={data ?? undefined}
+          columns={[
+            { header:"PO #", cell:(r:any)=> <span className="font-mono text-xs">{r.po_no}</span> },
+            { header:"Date", cell:(r:any)=> fmtDate(r.po_date) },
+            { header:"Supplier", cell:(r:any)=> r.suppliers ? `${r.suppliers.code}` : "—" },
+            { header:"Material", cell:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—" },
+            { header:"Plant", cell:(r:any)=> r.plants?.code ?? "—" },
+            { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
+            { header:"Rate", cell:(r:any)=> fmtCurrency(r.rate) },
+            { header:"Total", cell:(r:any)=> fmtCurrency(r.total_amount) },
+            { header:"Pending", cell:(r:any)=> fmtNum(r.pending_qty) },
+          ]}
+          details={[
+            { label:"PO #", value:(r:any)=> <span className="font-mono">{r.po_no}</span> },
+            { label:"PO date", value:(r:any)=> fmtDate(r.po_date) },
+            { label:"Invoice #", value:(r:any)=> r.invoice_no || "—" },
+            { label:"Invoice date", value:(r:any)=> r.invoice_date ? fmtDate(r.invoice_date) : "—" },
+            { label:"Supplier", value:(r:any)=> r.suppliers ? `${r.suppliers.code} — ${r.suppliers.name}` : "—", full:true },
+            { label:"Material", value:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—", full:true },
+            { label:"Plant", value:(r:any)=> r.plants?.code ?? "—" },
+            { label:"Quantity", value:(r:any)=> fmtNum(r.quantity) },
+            { label:"Rate", value:(r:any)=> fmtCurrency(r.rate) },
+            { label:"GST %", value:(r:any)=> `${r.gst_pct}%` },
+            { label:"Transport", value:(r:any)=> fmtCurrency(r.transport) },
+            { label:"Sub-total", value:(r:any)=> fmtCurrency(r.sub_total) },
+            { label:"GST amount", value:(r:any)=> fmtCurrency(r.gst_amount) },
+            { label:"Total", value:(r:any)=> <span className="text-primary font-semibold">{fmtCurrency(r.total_amount)}</span> },
+            { label:"Received qty", value:(r:any)=> fmtNum(r.received_qty) },
+            { label:"Pending qty", value:(r:any)=> fmtNum(r.pending_qty) },
+            { label:"Remarks", value:(r:any)=> r.remarks || "—", full:true },
+          ]}
+        />
       </PageBody>
     </>
   );
