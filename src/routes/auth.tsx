@@ -40,7 +40,7 @@ function AuthPage() {
   const logEvent = useServerFn(logAuthEvent);
   const check = useServerFn(checkLockout);
   const sendOtpSmtp = useServerFn(requestOtpEmail);
-  const verifyOtp = useServerFn(verifyOtpEmail);
+  const verifyOtpFn = useServerFn(verifyOtpEmail);
 
   useEffect(() => {
     if (session) navigate({ to: "/dashboard", replace: true });
@@ -96,7 +96,7 @@ function AuthPage() {
     e.preventDefault();
     if (expiresIn === 0) { toast.error("OTP expired — please request a new one"); return; }
     setBusy(true);
-    const res: any = await verifyOtp({ data: { email, token: otp.trim() } });
+    const res: any = await verifyOtpFn({ data: { email, token: otp.trim() } });
     if (!res?.ok) {
       setBusy(false);
       if (res?.locked) {
