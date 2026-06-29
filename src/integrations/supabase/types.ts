@@ -82,6 +82,13 @@ export type Database = {
             referencedRelation: "v_current_stock"
             referencedColumns: ["plant_id"]
           },
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       departments: {
