@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Factory, ShoppingCart, Boxes, ClipboardCheck, Trash2, BarChart3,
-  Building2, Layers, Truck, Ruler, Package, Wrench, LogOut, History, Users,
+  Building2, Layers, Truck, Ruler, Package, Wrench, History, Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,7 @@ const baseGroups: { label: string; items: { to: string; icon: any; label: string
 
 export function AppSidebar({ collapsed }: { collapsed: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { user, signOut, roles, hasAny } = useAuth();
+  const { hasAny } = useAuth();
   const groups = hasAny(["super_admin"])
     ? [...baseGroups, { label: "Administration", items: [{ to: "/admin/users", icon: Users, label: "User Management" }] }]
     : baseGroups;
@@ -77,25 +77,6 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
           </div>
         ))}
       </nav>
-      <div className={cn("border-t border-sidebar-border space-y-1", collapsed ? "p-2" : "p-3")}>
-        {!collapsed && (
-          <div className="px-3 py-2 text-xs">
-            <div className="font-medium truncate">{user?.email}</div>
-            <div className="text-sidebar-foreground/60 truncate">{roles.join(", ") || "no role"}</div>
-          </div>
-        )}
-        <button
-          onClick={signOut}
-          title={collapsed ? "Sign out" : undefined}
-          className={cn(
-            "w-full flex items-center rounded-md text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent",
-            collapsed ? "justify-center px-2 py-2" : "gap-3 px-3 py-2",
-          )}
-        >
-          <LogOut className="size-4" />
-          {!collapsed && "Sign out"}
-        </button>
-      </div>
     </aside>
   );
 }
