@@ -32,13 +32,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setRoles([]);
       }
+      setLoading(false);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session?.user) loadRoles(data.session.user.id).finally(() => setLoading(false));
-      else setLoading(false);
-    });
-    return () => sub.subscription.unsubscribe();
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+        if (data.session?.user) loadRoles(data.session.user.id).finally(() => setLoading(false));
+        else setLoading(false);
+      })
+      .catch((err) => {
+        console.error("[auth] getSession failed", err);
+        setLoading(false);
+      });
+    // Safety net — never leave the app stuck in loading
+    const safety = setTimeout(() => setLoading(false), 5000);
+    return () => { sub.subscription.unsubscribe(); clearTimeout(safety); };
   }, []);
 
   async function loadRoles(uid: string) {
