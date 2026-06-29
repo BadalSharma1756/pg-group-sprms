@@ -97,7 +97,7 @@ function AuthPage() {
     if (expiresIn === 0) { toast.error("OTP expired — please request a new one"); return; }
     setBusy(true);
     const { error } = await supabase.auth.verifyOtp({
-      email, token: otp.trim(), type: "email",
+      email, token: otp.trim(), type: "magiclink",
     });
     setBusy(false);
     if (error) {
