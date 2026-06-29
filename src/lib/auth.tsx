@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       });
     // Safety net — never leave the app stuck in loading
-    const safety = setTimeout(() => setLoading(false), 5000);
+    const safety = setTimeout(() => setLoading(false), 3000);
     return () => { sub.subscription.unsubscribe(); clearTimeout(safety); };
   }, []);
 
