@@ -434,6 +434,64 @@ export type Database = {
           },
         ]
       }
+      product_bom: {
+        Row: {
+          created_at: string
+          id: string
+          is_auto: boolean
+          material_id: string
+          notes: string | null
+          product_id: string
+          qty_per_unit: number
+          uom: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_auto?: boolean
+          material_id: string
+          notes?: string | null
+          product_id: string
+          qty_per_unit: number
+          uom?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_auto?: boolean
+          material_id?: string
+          notes?: string | null
+          product_id?: string
+          qty_per_unit?: number
+          uom?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_bom_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_bom_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "v_current_stock"
+            referencedColumns: ["material_id"]
+          },
+          {
+            foreignKeyName: "product_bom_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_entries: {
         Row: {
           approved_at: string | null
