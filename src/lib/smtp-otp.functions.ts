@@ -87,7 +87,8 @@ async function generateAndSendOtp(email: string, trigger: "user" | "admin", acto
   const code = gen.data.properties.email_otp as string;
 
   // Send via custom SMTP (Office 365).
-  const nodemailer = await import("nodemailer");
+  const nodemailerMod: any = await import("nodemailer");
+  const nodemailer: any = nodemailerMod.default ?? nodemailerMod;
   const fromName = process.env.SMTP_FROM_NAME ?? "SPRMS";
   const fromAddr = process.env.SMTP_FROM ?? process.env.SMTP_USER!;
   const transporter = nodemailer.createTransport({
