@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ScopeProvider } from "@/lib/scope";
 import { ScopeSwitcher } from "@/components/scope-switcher";
-import { Loader2 } from "lucide-react";
+import { Loader2, Menu } from "lucide-react";
+import logo from "@/assets/pg-logo.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated")({
   component: ProtectedLayout,
@@ -69,13 +70,29 @@ function LayoutInner() {
     });
   };
   return (
-    <div className="min-h-screen flex bg-background">
-      <AppSidebar collapsed={collapsed} onToggle={toggle} />
-      <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 sticky top-0 z-30 bg-card/95 backdrop-blur border-b flex items-center gap-3 px-4 md:px-6">
-          <div className="flex-1" />
-          <ScopeSwitcher />
-        </header>
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="h-16 sticky top-0 z-40 bg-card/95 backdrop-blur border-b flex items-center gap-3 px-3 md:px-5">
+        <button
+          onClick={toggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="size-9 grid place-items-center rounded-md hover:bg-accent text-muted-foreground"
+        >
+          <Menu className="size-5" />
+        </button>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="size-11 rounded-lg bg-white grid place-items-center shrink-0 p-1 ring-1 ring-primary/20 shadow-sm">
+            <img src={logo.url} alt="PG" className="size-full object-contain" />
+          </div>
+          <div className="min-w-0 hidden sm:block">
+            <div className="font-bold tracking-tight text-base leading-tight truncate text-foreground">SPRMS</div>
+            <div className="text-[10px] uppercase tracking-wider text-primary/80 font-medium">SS Pipe Ricco · v1.0</div>
+          </div>
+        </div>
+        <div className="flex-1" />
+        <ScopeSwitcher />
+      </header>
+      <div className="flex-1 flex min-h-0">
+        <AppSidebar collapsed={collapsed} />
         <main className="flex-1 min-w-0">
           <Outlet />
         </main>
