@@ -107,6 +107,83 @@ function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: strin
   );
 }
 
+const auditTableLabel: Record<string,string> = {
+  production_entries: "Production",
+  purchase_orders: "Purchase",
+  scrap_entries: "Scrap",
+  gap_verifications: "Gap Verify",
+  inventory_transactions: "Inventory",
+};
+const auditTableIcon: Record<string, any> = {
+  production_entries: Factory,
+  purchase_orders: ShoppingCart,
+  scrap_entries: Trash2,
+  gap_verifications: ClipboardCheck,
+  inventory_transactions: Boxes,
+};
+function actionBadge(a: string) {
+  if (a === "approved") return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"><Check className="size-3 mr-1"/>Approved</Badge>;
+  if (a === "rejected") return <Badge variant="destructive"><X className="size-3 mr-1"/>Rejected</Badge>;
+  if (a === "create") return <Badge variant="secondary"><Plus className="size-3 mr-1"/>Created</Badge>;
+  if (a === "delete") return <Badge variant="destructive">Deleted</Badge>;
+  return <Badge variant="outline"><Edit className="size-3 mr-1"/>{a}</Badge>;
+}
+
+function RecentActivity({ plantIds }: { plantIds: string[] }) {
+  const { data: logs } = useQuery({
+    queryKey: ["dashboard-activity", plantIds.join(",")],
+    queryFn: async () => {
+      let q = supabase.from("audit_logs")
+        .select("*, profiles:user_id(email,full_name), plants:plant_id(code), departments:department_id(code)")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (plantIds.length) q = q.in("plant_id", plantIds);
+      return (await q).data ?? [];
+    },
+    refetchInterval: 30000,
+  });
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-sm flex items-center gap-2"><Activity className="size-4 text-primary"/>Recent activity — approvals, scrap & inventory adjustments</CardTitle>
+        <Link to="/audit" className="text-xs text-primary hover:underline">View full audit →</Link>
+      </CardHeader>
+      <CardContent>
+        {(!logs || logs.length === 0) ? (
+          <div className="text-sm text-muted-foreground py-4 text-center">No recent activity.</div>
+        ) : (
+          <div className="divide-y -mx-2 max-h-[360px] overflow-y-auto">
+            {logs.map((l: any) => {
+              const Icon = auditTableIcon[l.table_name] ?? Edit;
+              return (
+                <div key={l.id} className="flex items-start gap-3 px-2 py-2.5">
+                  <div className="size-8 rounded-md bg-muted grid place-items-center shrink-0"><Icon className="size-4 text-muted-foreground"/></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {actionBadge(l.action)}
+                      <span className="text-sm font-medium">{auditTableLabel[l.table_name] ?? l.table_name}</span>
+                      {l.entity_label && <span className="text-xs font-mono text-muted-foreground">{l.entity_label}</span>}
+                      {l.old_status && l.new_status && l.old_status !== l.new_status && (
+                        <span className="text-xs text-muted-foreground">{l.old_status} → <b>{l.new_status}</b></span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {fmtDateTime(l.created_at)}
+                      {l.plants?.code && <> · {l.plants.code}</>}
+                      {l.departments?.code && <> · {l.departments.code}</>}
+                      {" · "}{l.profiles?.full_name || l.profiles?.email || "system"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function Dashboard() {
   // ...
   const plantIds = useScopedPlantIds();
