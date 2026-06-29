@@ -355,3 +355,57 @@ export const verifyOtpEmail = createServerFn({ method: "POST" })
       refresh_token: session.refresh_token,
     };
   });
+
+/**
+ * TEMP DEV BYPASS — auto sign-in without OTP. Mints a Supabase session for
+ * the first available super_admin (or the email passed in, if it exists).
+ * REMOVE this function and the call site in src/routes/auth.tsx before
+ * going to production.
+ */
+export const devBypassSignIn = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ email: z.string().email().optional() }).parse(d ?? {}))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let email = data.email?.toLowerCase();
+    if (!email) {
+      const { data: admin } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id, profiles!inner(email)")
+        .eq("role", "super_admin")
+        .limit(1)
+        .maybeSingle();
+      email = (admin as any)?.profiles?.email?.toLowerCase();
+    }
+    if (!email) throw new Error("No super_admin user found for dev bypass");
+
+    const gen = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
+    if (gen.error || !gen.data?.properties?.hashed_token) {
+      throw new Error(gen.error?.message ?? "Failed to mint session");
+    }
+    const verificationType =
+      (gen.data.properties.verification_type as (typeof OTP_VERIFY_TYPES)[number]) ?? "magiclink";
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const supa = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_PUBLISHABLE_KEY!,
+      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+    );
+    const { data: tokenData, error: tokenError } = await supa.auth.verifyOtp({
+      token_hash: gen.data.properties.hashed_token,
+      type: verificationType,
+    });
+    if (tokenError || !tokenData?.session) {
+      throw new Error(tokenError?.message ?? "Failed to verify minted token");
+    }
+    await supabaseAdmin.from("auth_events").insert({
+      email, event_type: "otp_verified", success: true, message: "DEV BYPASS",
+    });
+    return {
+      ok: true as const,
+      email,
+      access_token: tokenData.session.access_token,
+      refresh_token: tokenData.session.refresh_token,
+    };
+  });
