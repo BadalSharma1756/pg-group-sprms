@@ -185,7 +185,7 @@ function RecentActivity({ plantIds }: { plantIds: string[] }) {
 }
 
 function Dashboard() {
-  // ...
+  // dashboard
   const plantIds = useScopedPlantIds();
   const { data: k } = useKpi(plantIds);
   const { data: chart } = useCharts(plantIds);
