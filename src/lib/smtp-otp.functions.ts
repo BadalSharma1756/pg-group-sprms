@@ -224,10 +224,11 @@ export const verifyOtpEmail = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const metadata = lastOtp?.metadata;
-    const preferredType =
+    const storedType =
       metadata && typeof metadata === "object" && !Array.isArray(metadata)
         ? (metadata as Record<string, unknown>).verification_type
         : undefined;
+    const preferredType = OTP_VERIFY_TYPES.find((t) => t === storedType);
     const verifyTypes = [
       ...(OTP_VERIFY_TYPES.includes(preferredType) ? [preferredType] : []),
       ...OTP_VERIFY_TYPES.filter((t) => t !== preferredType),
