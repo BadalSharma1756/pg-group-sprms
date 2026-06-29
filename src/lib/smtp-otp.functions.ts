@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { recordOtpFailureInternal } from "./auth-events.functions";
+import { createClient } from "@supabase/supabase-js";
 
 const EmailInput = z.object({ email: z.string().email() });
 
@@ -67,6 +69,20 @@ async function generateAndSendOtp(email: string, trigger: "user" | "admin", acto
   const lock = await checkLocked(supabaseAdmin, lower);
   if (lock.locked) {
     return { ok: false as const, locked: true, unlock_at: lock.unlock_at, status: "blocked" as const };
+  }
+
+  // Only send to addresses belonging to an existing user — prevents SMTP/email
+  // abuse via the public OTP endpoint. We return a generic success regardless
+  // so the endpoint does not act as an account-enumeration oracle.
+  if (trigger === "user") {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", lower)
+      .maybeSingle();
+    if (!profile) {
+      return { ok: true as const, status: "sent" as const, sent_at: new Date().toISOString() };
+    }
   }
 
   // Generate a Supabase-issued OTP without sending Supabase's default email.
@@ -150,4 +166,60 @@ export const adminSendOtpSmtp = createServerFn({ method: "POST" })
       throw new Error("Only super_admin can send OTPs to users");
     }
     return generateAndSendOtp(data.email, "admin", context.userId);
+  });
+
+/**
+ * Public: verify an OTP server-side. The failure path is what gates lockouts,
+ * so this MUST stay the only public endpoint that writes `otp_failed` /
+ * `lockout` events (via `recordOtpFailureInternal`). On success we return the
+ * Supabase session for the client to install via `supabase.auth.setSession`.
+ */
+const VerifyInput = z.object({
+  email: z.string().email(),
+  token: z.string().trim().min(4).max(10),
+});
+
+export const verifyOtpEmail = createServerFn({ method: "POST" })
+  .inputValidator((d) => VerifyInput.parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = data.email.toLowerCase();
+
+    // Reject early if currently locked — do not record a failure for it.
+    const lock = await checkLocked(supabaseAdmin, email);
+    if (lock.locked) {
+      return { ok: false as const, locked: true as const, unlock_at: lock.unlock_at };
+    }
+
+    const supa = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_PUBLISHABLE_KEY!,
+      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+    );
+    const { data: verifyData, error } = await supa.auth.verifyOtp({
+      email, token: data.token, type: "magiclink",
+    });
+
+    if (error || !verifyData?.session) {
+      const res = await recordOtpFailureInternal(email, error?.message ?? "Invalid OTP");
+      return {
+        ok: false as const,
+        locked: res.locked,
+        failed_count: res.failed_count,
+        threshold: LOCKOUT_THRESHOLD,
+        lockout_minutes: res.locked ? LOCKOUT_DURATION_MIN : undefined,
+        message: error?.message ?? "Invalid OTP",
+      };
+    }
+
+    await supabaseAdmin.from("auth_events").insert({
+      email, event_type: "otp_verified", success: true,
+    });
+
+    const session = verifyData.session;
+    return {
+      ok: true as const,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    };
   });

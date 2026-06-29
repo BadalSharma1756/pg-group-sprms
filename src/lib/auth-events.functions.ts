@@ -8,7 +8,10 @@ const LOCKOUT_DURATION_MIN = 15;
 
 const LogInput = z.object({
   email: z.string().email(),
-  event_type: z.enum(["otp_sent", "otp_verified", "otp_failed", "lockout", "admin_otp_sent", "resend_otp"]),
+  // Only safe, non-locking event types may be logged from the public auth page.
+  // `otp_sent`, `otp_failed`, `lockout`, and `admin_otp_sent` are server-controlled
+  // and written exclusively by trusted server flows (smtp-otp / verifyOtpEmail / admin fns).
+  event_type: z.enum(["otp_verified", "resend_otp"]),
   success: z.boolean().default(true),
   message: z.string().optional(),
   metadata: z.record(z.string(), z.any()).optional(),
@@ -59,32 +62,35 @@ export const checkLockout = createServerFn({ method: "POST" })
     return { locked: false, failed_count: failedCount, threshold: LOCKOUT_THRESHOLD };
   });
 
-/** Record an OTP failure; if threshold crossed, also insert a lockout event. */
-export const recordOtpFailure = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ email: z.string().email(), message: z.string().optional() }).parse(d))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const email = data.email.toLowerCase();
-    await supabaseAdmin.from("auth_events").insert({
-      email, event_type: "otp_failed", success: false, message: data.message ?? "Invalid OTP",
-    });
-    const since = new Date(Date.now() - LOCKOUT_WINDOW_MIN * 60_000).toISOString();
-    const { count } = await supabaseAdmin
-      .from("auth_events")
-      .select("*", { count: "exact", head: true })
-      .eq("email", email)
-      .eq("event_type", "otp_failed")
-      .gte("created_at", since);
-    if ((count ?? 0) >= LOCKOUT_THRESHOLD) {
-      await supabaseAdmin.from("auth_events").insert({
-        email, event_type: "lockout", success: false,
-        message: `Locked for ${LOCKOUT_DURATION_MIN} min after ${count} failed attempts`,
-        metadata: { lockout_minutes: LOCKOUT_DURATION_MIN },
-      });
-      return { locked: true, failed_count: count, lockout_minutes: LOCKOUT_DURATION_MIN };
-    }
-    return { locked: false, failed_count: count ?? 0, threshold: LOCKOUT_THRESHOLD };
+/**
+ * Internal helper — record OTP failure and lock the account after threshold.
+ * Intentionally NOT exposed as a public server function: an anonymous caller
+ * could otherwise trigger lockouts for arbitrary users. Callers must verify
+ * an OTP attempt actually happened (see `verifyOtpEmail`) before invoking this.
+ */
+export async function recordOtpFailureInternal(email: string, message?: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const lower = email.toLowerCase();
+  await supabaseAdmin.from("auth_events").insert({
+    email: lower, event_type: "otp_failed", success: false, message: message ?? "Invalid OTP",
   });
+  const since = new Date(Date.now() - LOCKOUT_WINDOW_MIN * 60_000).toISOString();
+  const { count } = await supabaseAdmin
+    .from("auth_events")
+    .select("*", { count: "exact", head: true })
+    .eq("email", lower)
+    .eq("event_type", "otp_failed")
+    .gte("created_at", since);
+  if ((count ?? 0) >= LOCKOUT_THRESHOLD) {
+    await supabaseAdmin.from("auth_events").insert({
+      email: lower, event_type: "lockout", success: false,
+      message: `Locked for ${LOCKOUT_DURATION_MIN} min after ${count} failed attempts`,
+      metadata: { lockout_minutes: LOCKOUT_DURATION_MIN },
+    });
+    return { locked: true as const, failed_count: count ?? 0, lockout_minutes: LOCKOUT_DURATION_MIN };
+  }
+  return { locked: false as const, failed_count: count ?? 0, threshold: LOCKOUT_THRESHOLD };
+}
 
 /** Super-admin: send OTP to user's registered email and report delivery status. */
 export const adminSendOtp = createServerFn({ method: "POST" })
