@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { recordOtpFailureInternal } from "./auth-events.functions";
 
 const EmailInput = z.object({ email: z.string().email() });
 
@@ -67,6 +68,20 @@ async function generateAndSendOtp(email: string, trigger: "user" | "admin", acto
   const lock = await checkLocked(supabaseAdmin, lower);
   if (lock.locked) {
     return { ok: false as const, locked: true, unlock_at: lock.unlock_at, status: "blocked" as const };
+  }
+
+  // Only send to addresses belonging to an existing user — prevents SMTP/email
+  // abuse via the public OTP endpoint. We return a generic success regardless
+  // so the endpoint does not act as an account-enumeration oracle.
+  if (trigger === "user") {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", lower)
+      .maybeSingle();
+    if (!profile) {
+      return { ok: true as const, status: "sent" as const, sent_at: new Date().toISOString() };
+    }
   }
 
   // Generate a Supabase-issued OTP without sending Supabase's default email.
