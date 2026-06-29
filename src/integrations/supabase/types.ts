@@ -406,6 +406,39 @@ export type Database = {
           },
         ]
       }
+      otp_challenges: {
+        Row: {
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          token_hash: string
+          verification_type: string
+        }
+        Insert: {
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          verification_type: string
+        }
+        Update: {
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          verification_type?: string
+        }
+        Relationships: []
+      }
       pipe_sizes: {
         Row: {
           code: string
