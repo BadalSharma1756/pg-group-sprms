@@ -83,16 +83,16 @@ function useCharts(plantIds: string[]) {
 function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: string; value: string; hint?: string; tone?: "default" | "warn" | "ok" }) {
   const toneBg =
     tone === "warn"
-      ? "bg-gradient-to-br from-rose-50 to-amber-50 border-rose-200/60"
+      ? "bg-gradient-to-br from-rose-50 to-amber-50 border-rose-200/60 dark:from-rose-950/40 dark:to-amber-950/40 dark:border-rose-800/40"
       : tone === "ok"
-      ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/60"
-      : "bg-gradient-to-br from-sky-50 to-indigo-50 border-sky-200/60";
+      ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/60 dark:from-emerald-950/40 dark:to-teal-950/40 dark:border-emerald-800/40"
+      : "bg-gradient-to-br from-sky-50 to-indigo-50 border-sky-200/60 dark:from-slate-800 dark:to-indigo-950/60 dark:border-indigo-800/40";
   const iconBg =
     tone === "warn"
-      ? "bg-rose-100 text-rose-600"
+      ? "bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300"
       : tone === "ok"
-      ? "bg-emerald-100 text-emerald-600"
-      : "bg-sky-100 text-sky-600";
+      ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300"
+      : "bg-sky-100 text-sky-600 dark:bg-indigo-900/50 dark:text-indigo-300";
   return (
     <Card
       tabIndex={0}
@@ -102,11 +102,11 @@ function Kpi({ icon: Icon, label, value, hint, tone }: { icon: any; label: strin
     >
       <CardContent className="p-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-[10px] uppercase tracking-wider text-slate-700 font-semibold leading-tight">{label}</div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-700 dark:text-foreground/80 font-semibold leading-tight">{label}</div>
           <div className={`size-7 grid place-items-center rounded-lg shrink-0 ${iconBg}`}><Icon className="size-4" /></div>
         </div>
-        <div className="mt-2 text-xl font-bold tabular-nums whitespace-nowrap truncate text-slate-900">{value}</div>
-        {hint && <div className="mt-0.5 text-[10px] text-slate-600 truncate">{hint}</div>}
+        <div className="mt-2 text-xl font-bold tabular-nums whitespace-nowrap truncate text-slate-900 dark:text-foreground">{value}</div>
+        {hint && <div className="mt-0.5 text-[10px] text-slate-600 dark:text-muted-foreground truncate">{hint}</div>}
       </CardContent>
     </Card>
   );
