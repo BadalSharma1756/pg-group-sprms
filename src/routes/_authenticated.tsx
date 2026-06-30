@@ -8,6 +8,7 @@ import { Loader2, Menu } from "lucide-react";
 import logo from "@/assets/pg-logo.png.asset.json";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { UserMenu } from "@/components/user-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Route = createFileRoute("/_authenticated")({
   component: ProtectedLayout,
@@ -99,6 +100,7 @@ function LayoutInner() {
         </div>
         <div className="flex-1" />
         <ScopeSwitcher />
+        <ThemeToggle />
         <UserMenu />
       </header>
       <div className="flex-1 flex min-h-0">

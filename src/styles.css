@@ -2,6 +2,8 @@
 @source "../src";
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 
 
 /*
@@ -104,6 +106,43 @@
   --sidebar-ring: oklch(0.55 0.20 275);
 }
 
+.dark {
+  --background: oklch(0.18 0.02 270);
+  --foreground: oklch(0.96 0.01 250);
+  --card: oklch(0.22 0.025 270);
+  --card-foreground: oklch(0.96 0.01 250);
+  --popover: oklch(0.22 0.025 270);
+  --popover-foreground: oklch(0.96 0.01 250);
+  --primary: oklch(0.70 0.18 275);
+  --primary-foreground: oklch(0.16 0.02 270);
+  --secondary: oklch(0.28 0.04 260);
+  --secondary-foreground: oklch(0.96 0.01 250);
+  --muted: oklch(0.26 0.03 265);
+  --muted-foreground: oklch(0.72 0.03 260);
+  --accent: oklch(0.30 0.06 220);
+  --accent-foreground: oklch(0.96 0.01 250);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --success: oklch(0.68 0.16 155);
+  --warning: oklch(0.78 0.16 75);
+  --border: oklch(0.32 0.02 265);
+  --input: oklch(0.32 0.02 265);
+  --ring: oklch(0.70 0.18 275);
+  --chart-1: oklch(0.70 0.18 275);
+  --chart-2: oklch(0.72 0.14 195);
+  --chart-3: oklch(0.78 0.16 70);
+  --chart-4: oklch(0.70 0.20 350);
+  --chart-5: oklch(0.70 0.16 155);
+  --sidebar: oklch(0.20 0.02 270);
+  --sidebar-foreground: oklch(0.94 0.01 250);
+  --sidebar-primary: oklch(0.70 0.18 275);
+  --sidebar-primary-foreground: oklch(0.16 0.02 270);
+  --sidebar-accent: oklch(0.28 0.04 260);
+  --sidebar-accent-foreground: oklch(0.96 0.01 250);
+  --sidebar-border: oklch(0.30 0.02 265);
+  --sidebar-ring: oklch(0.70 0.18 275);
+}
+
 
 @layer base {
   * {
@@ -119,6 +158,21 @@
       radial-gradient(700px 500px at 90% 100%, oklch(0.94 0.10 80 / 0.35), transparent 60%);
     background-attachment: fixed;
     color: var(--color-foreground);
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(1100px 520px at 0% -10%, oklch(0.35 0.10 275 / 0.45), transparent 60%),
+      radial-gradient(900px 480px at 100% 0%, oklch(0.32 0.10 220 / 0.40), transparent 60%),
+      radial-gradient(800px 600px at 50% 110%, oklch(0.34 0.10 320 / 0.35), transparent 60%);
+  }
+
+  /* Ensure sticky KPI band fully occludes scrolling content/charts behind it */
+  .lg\:sticky.bg-background,
+  [data-sticky-band] {
+    background-color: var(--color-background) !important;
+    background-image: none !important;
+    backdrop-filter: saturate(1.2);
   }
 
   /* Smooth scroll + offset so sticky KPI band never overlaps anchored content */
