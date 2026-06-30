@@ -80,8 +80,8 @@ function LayoutInner() {
     });
   };
   return (
-    <div className="min-h-screen flex flex-col bg-background" style={{ ["--app-header-h" as any]: "64px" }}>
-      <header className="h-16 sticky top-0 z-50 header-gradient text-slate-800 border-b border-slate-200 flex items-center gap-3 px-3 md:px-5 shadow-sm transition-shadow duration-200 hover:shadow-md backdrop-saturate-150">
+    <div className="h-screen flex flex-col bg-background overflow-hidden" style={{ ["--app-header-h" as any]: "64px" }}>
+      <header className="h-16 shrink-0 z-50 header-gradient text-slate-800 border-b border-slate-200 flex items-center gap-3 px-3 md:px-5 shadow-sm transition-shadow duration-200 hover:shadow-md backdrop-saturate-150">
         <button
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -103,8 +103,8 @@ function LayoutInner() {
         <ThemeToggle />
         <UserMenu />
       </header>
-      <div className="flex-1 flex min-h-0">
-        <div className="hidden md:block h-full">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <div className="hidden md:block h-full overflow-hidden">
           <AppSidebar collapsed={collapsed} />
         </div>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -115,7 +115,7 @@ function LayoutInner() {
             </div>
           </SheetContent>
         </Sheet>
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 overflow-y-auto">
           <Outlet />
         </main>
       </div>

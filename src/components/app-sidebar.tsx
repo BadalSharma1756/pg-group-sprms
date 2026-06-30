@@ -42,7 +42,7 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
   return (
     <aside
       className={cn(
-        "shrink-0 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border transition-[width] duration-200 sticky top-16 h-full",
+        "shrink-0 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border transition-[width] duration-200 h-full",
         collapsed ? "w-16" : "w-64",
       )}
     >
