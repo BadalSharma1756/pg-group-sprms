@@ -4,7 +4,7 @@ import { MapPin, Building2 } from "lucide-react";
 export function ScopeSwitcher() {
   const { locations, filteredPlants, locationId, plantId, setLocationId, setPlantId } = useScope();
   const baseCls =
-    "h-9 rounded-md border border-input bg-background pl-8 pr-7 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring";
+    "h-9 rounded-md border border-input bg-background text-foreground pl-8 pr-7 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring [&>option]:bg-popover [&>option]:text-popover-foreground";
   return (
     <div className="flex items-center gap-2">
       <div className="relative">
