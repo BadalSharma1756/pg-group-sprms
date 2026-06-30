@@ -1195,7 +1195,7 @@ export type Database = {
         | "viewer"
       approval_status: "draft" | "pending" | "approved" | "rejected"
       entity_status: "active" | "inactive"
-      shift_type: "morning" | "afternoon" | "night" | "general"
+      shift_type: "morning" | "afternoon" | "night" | "general" | "evening"
       txn_type:
         | "opening"
         | "purchase_in"
@@ -1348,7 +1348,7 @@ export const Constants = {
       ],
       approval_status: ["draft", "pending", "approved", "rejected"],
       entity_status: ["active", "inactive"],
-      shift_type: ["morning", "afternoon", "night", "general"],
+      shift_type: ["morning", "afternoon", "night", "general", "evening"],
       txn_type: [
         "opening",
         "purchase_in",
