@@ -7,6 +7,18 @@ export type AppRole =
   | "purchase_manager" | "purchase_executive" | "store_manager"
   | "quality_manager" | "auditor" | "viewer";
 
+/** First route a user with the given roles should land on after sign-in. */
+export function landingPathFor(roles: AppRole[]): string {
+  const has = (r: AppRole) => roles.includes(r);
+  if (has("super_admin") || has("plant_admin")) return "/dashboard";
+  if (has("production_manager") || has("production_operator")) return "/production";
+  if (has("purchase_manager") || has("purchase_executive")) return "/purchase";
+  if (has("store_manager")) return "/inventory";
+  if (has("quality_manager")) return "/gap-verification";
+  if (has("auditor")) return "/audit";
+  return "/dashboard";
+}
+
 interface AuthCtx {
   session: Session | null;
   user: User | null;
