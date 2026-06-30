@@ -15,7 +15,8 @@ const LOCKOUT_WINDOW_MIN = 15;
 const LOCKOUT_DURATION_MIN = 15;
 const LOCKOUT_THRESHOLD = 5;
 const OTP_VERIFY_TYPES = ["email", "magiclink", "recovery"] as const;
-const OTP_EXPIRY_MIN = 10;
+// Long expiry — we gate on our own salted hash, not Supabase's token TTL.
+const OTP_EXPIRY_MIN = 60 * 24;
 
 async function hashOtpCode(email: string, code: string, salt: string) {
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SMTP_PASS ?? "sprms";
@@ -265,11 +266,21 @@ export const verifyOtpEmail = createServerFn({ method: "POST" })
         };
       }
 
-      const storedChallengeType = OTP_VERIFY_TYPES.find((t) => t === challenge.verification_type) ?? "magiclink";
-      const { data: tokenData, error: tokenError } = await supa.auth.verifyOtp({
-        token_hash: challenge.token_hash,
-        type: storedChallengeType,
+      // Code matched our salted hash. Mint a fresh Supabase session by
+      // generating a brand-new magic link and verifying it immediately,
+      // so Supabase's per-token TTL can never reject a valid user code.
+      const fresh = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
       });
+      const freshType =
+        OTP_VERIFY_TYPES.find((t) => t === fresh.data?.properties?.verification_type) ?? "magiclink";
+      const { data: tokenData, error: tokenError } = fresh.data?.properties?.hashed_token
+        ? await supa.auth.verifyOtp({
+            token_hash: fresh.data.properties.hashed_token,
+            type: freshType,
+          })
+        : { data: null as any, error: fresh.error ?? new Error("Failed to mint session") };
 
       if (tokenError || !tokenData?.session) {
         const res = await recordOtpFailureInternal(email, tokenError?.message ?? "Invalid OTP");
