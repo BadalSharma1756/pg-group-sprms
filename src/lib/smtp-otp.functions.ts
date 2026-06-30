@@ -122,10 +122,14 @@ async function generateAndSendOtp(email: string, trigger: "user" | "admin", acto
   const code = gen.data.properties.email_otp as string;
   const verificationType = gen.data.properties.verification_type ?? "magiclink";
 
-  // Send via custom SMTP (Office 365) using a Worker-compatible mailer.
-  // nodemailer relies on Node net/tls and cannot run inside the Cloudflare
-  // Worker runtime — it triggers "Class extends value [object Module]".
-  const { WorkerMailer } = await import("worker-mailer");
+  // Send via custom SMTP (Office 365). Dev runs on Node → use nodemailer
+  // (loaded via createRequire so Vite SSR doesn't trip the CJS/ESM
+  // "[object Module]" interop). Prod runs on Cloudflare workerd → use
+  // worker-mailer, which only exists there because it needs cloudflare:sockets.
+  const isWorkerd =
+    typeof navigator !== "undefined" &&
+    typeof (navigator as any).userAgent === "string" &&
+    (navigator as any).userAgent.includes("Cloudflare-Workers");
   const fromName = process.env.SMTP_FROM_NAME ?? "SPRMS";
   const fromAddr = process.env.SMTP_FROM ?? process.env.SMTP_USER!;
   const port = Number(process.env.SMTP_PORT ?? 587);
@@ -133,24 +137,45 @@ async function generateAndSendOtp(email: string, trigger: "user" | "admin", acto
   let sendStatus: "sent" | "failed" = "sent";
   let sendError: string | null = null;
   try {
-    const mailer = await WorkerMailer.connect({
-      host: process.env.SMTP_HOST!,
-      port,
-      secure: port === 465,
-      startTls: port !== 465,
-      credentials: {
-        username: process.env.SMTP_USER!,
-        password: process.env.SMTP_PASS!,
-      },
-      authType: ["plain", "login"],
-    });
-    await mailer.send({
-      from: { name: fromName, email: fromAddr },
-      to: { email },
-      subject: `${code} is your ${fromName} verification code`,
-      text: `Your verification code is ${code}. It expires in 10 minutes.`,
-      html: buildHtml(code, fromName),
-    });
+    if (isWorkerd) {
+      const { WorkerMailer } = await import("worker-mailer");
+      const mailer = await WorkerMailer.connect({
+        host: process.env.SMTP_HOST!,
+        port,
+        secure: port === 465,
+        startTls: port !== 465,
+        credentials: {
+          username: process.env.SMTP_USER!,
+          password: process.env.SMTP_PASS!,
+        },
+        authType: ["plain", "login"],
+      });
+      await mailer.send({
+        from: { name: fromName, email: fromAddr },
+        to: { email },
+        subject: `${code} is your ${fromName} verification code`,
+        text: `Your verification code is ${code}. It expires in 10 minutes.`,
+        html: buildHtml(code, fromName),
+      });
+    } else {
+      const { createRequire } = await import("node:module");
+      const req = createRequire(import.meta.url);
+      const nodemailer: any = req("nodemailer");
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST!,
+        port,
+        secure: port === 465,
+        auth: { user: process.env.SMTP_USER!, pass: process.env.SMTP_PASS! },
+        requireTLS: port !== 465,
+      });
+      await transporter.sendMail({
+        from: `"${fromName}" <${fromAddr}>`,
+        to: email,
+        subject: `${code} is your ${fromName} verification code`,
+        text: `Your verification code is ${code}. It expires in 10 minutes.`,
+        html: buildHtml(code, fromName),
+      });
+    }
   } catch (e: any) {
     sendStatus = "failed";
     sendError = e?.message ?? String(e);
