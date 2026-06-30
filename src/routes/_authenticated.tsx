@@ -80,8 +80,8 @@ function LayoutInner() {
     });
   };
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden" style={{ ["--app-header-h" as any]: "64px" }}>
-      <header className="h-16 shrink-0 z-50 header-gradient text-slate-800 border-b border-slate-200 flex items-center gap-3 px-3 md:px-5 shadow-sm transition-shadow duration-200 hover:shadow-md backdrop-saturate-150">
+    <div className="min-h-screen flex flex-col bg-background" style={{ ["--app-header-h" as any]: "64px" }}>
+      <header className="h-16 sticky top-0 z-50 header-gradient text-slate-800 border-b border-slate-200 flex items-center gap-3 px-3 md:px-5 shadow-sm transition-shadow duration-200 hover:shadow-md backdrop-saturate-150">
         <button
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -102,19 +102,19 @@ function LayoutInner() {
         <ScopeSwitcher />
         <UserMenu />
       </header>
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        <div className="hidden md:flex h-full">
+      <div className="flex-1 flex min-h-0">
+        <div className="hidden md:block h-full">
           <AppSidebar collapsed={collapsed} />
         </div>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="p-0 w-[18rem] md:hidden h-full data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left duration-300">
+          <SheetContent side="left" className="p-0 w-[18rem] md:hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left duration-300">
             <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-            <div onClick={() => setMobileOpen(false)} className="h-full">
+            <div onClick={() => setMobileOpen(false)}>
               <AppSidebar collapsed={false} />
             </div>
           </SheetContent>
         </Sheet>
-        <main className="flex-1 min-w-0 overflow-y-auto">
+        <main className="flex-1 min-w-0">
           <Outlet />
         </main>
       </div>
