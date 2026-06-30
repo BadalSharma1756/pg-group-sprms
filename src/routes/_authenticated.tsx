@@ -115,7 +115,7 @@ function LayoutInner() {
             </div>
           </SheetContent>
         </Sheet>
-        <main className="flex-1 min-w-0 overflow-y-auto">
+        <main className="flex-1 min-w-0 overflow-y-auto bg-background">
           <Outlet />
         </main>
       </div>
