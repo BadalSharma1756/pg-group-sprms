@@ -150,8 +150,8 @@ function Dashboard() {
         } />
       <PageBody>
         <div
-          className="lg:sticky z-40 -mx-4 md:-mx-6 px-4 md:px-6 pt-3 pb-3 bg-background border-b shadow-md"
-          style={{ top: "var(--app-header-h, 64px)" }}
+          data-sticky-band
+          className="sticky top-0 z-40 -mx-4 md:-mx-6 px-4 md:px-6 pt-3 pb-3 bg-background border-b shadow-md"
         >
           <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
             <Kpi icon={Factory} label="Today's Production Entries" value={fmtNum(k?.todaysProduction, 0)} />
