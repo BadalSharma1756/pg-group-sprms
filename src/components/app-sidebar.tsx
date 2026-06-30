@@ -42,11 +42,11 @@ export function AppSidebar({ collapsed }: { collapsed: boolean }) {
   return (
     <aside
       className={cn(
-        "shrink-0 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border transition-[width] duration-200 h-full min-h-0",
+        "shrink-0 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border transition-[width] duration-200 sticky top-16 h-full",
         collapsed ? "w-16" : "w-64",
       )}
     >
-      <nav className={cn("flex-1 min-h-0 overflow-y-auto py-4 pb-6 space-y-5", collapsed ? "px-2" : "px-3")}>
+      <nav className={cn("flex-1 overflow-y-auto py-4 space-y-5", collapsed ? "px-2" : "px-3")}>
         {groups.map((g) => (
           <div key={g.label}>
             {!collapsed && (
