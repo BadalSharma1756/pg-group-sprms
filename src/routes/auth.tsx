@@ -121,7 +121,7 @@ function AuthPage() {
   async function verifyOtp(e: React.FormEvent) {
     e.preventDefault();
     if (expiresIn === 0) { toast.error("This code has expired — please request a new one."); return; }
-    if (otp.trim().length !== 6) { toast.error("Enter all 6 digits of your code."); return; }
+    if (otp.trim().length < 6 || otp.trim().length > 8) { toast.error("Enter the 6–8 digit code from your email."); return; }
     setBusy(true);
     let res: any;
     try {
@@ -285,7 +285,7 @@ function AuthPage() {
                   <Label htmlFor="otp">One-time code</Label>
                   <div className="flex justify-center pt-1">
                     <InputOTP
-                      maxLength={6}
+                      maxLength={8}
                       value={otp}
                       onChange={setOtp}
                       autoFocus
@@ -296,12 +296,14 @@ function AuthPage() {
                         <InputOTPSlot index={0} className="h-12 w-11 text-lg font-semibold" />
                         <InputOTPSlot index={1} className="h-12 w-11 text-lg font-semibold" />
                         <InputOTPSlot index={2} className="h-12 w-11 text-lg font-semibold" />
+                        <InputOTPSlot index={3} className="h-12 w-11 text-lg font-semibold" />
                       </InputOTPGroup>
                       <InputOTPSeparator />
                       <InputOTPGroup>
-                        <InputOTPSlot index={3} className="h-12 w-11 text-lg font-semibold" />
                         <InputOTPSlot index={4} className="h-12 w-11 text-lg font-semibold" />
                         <InputOTPSlot index={5} className="h-12 w-11 text-lg font-semibold" />
+                        <InputOTPSlot index={6} className="h-12 w-11 text-lg font-semibold" />
+                        <InputOTPSlot index={7} className="h-12 w-11 text-lg font-semibold" />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
