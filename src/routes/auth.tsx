@@ -2,11 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
+import { useAuth, landingPathFor, type AppRole } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { ArrowLeft, ShieldAlert, Timer, Mail, KeyRound, ShieldCheck, Sparkles, Factory, Boxes, LineChart } from "lucide-react";
 import { logAuthEvent, checkLockout } from "@/lib/auth-events.functions";
@@ -26,8 +27,27 @@ function fmt(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+/** Map raw server / network errors to short, user-friendly sentences. */
+function friendlySendError(raw?: string) {
+  const m = (raw ?? "").toLowerCase();
+  if (!raw) return "Couldn't send the code. Please try again.";
+  if (m.includes("smtp") || m.includes("etimedout") || m.includes("econn") || m.includes("network")) {
+    return "Email service is temporarily unavailable. Please try again in a minute.";
+  }
+  if (m.includes("rate") || m.includes("too many")) return "Too many requests — please wait a moment and try again.";
+  if (m.includes("only @")) return raw; // domain restriction message is already user-facing
+  return raw;
+}
+function friendlyVerifyError(raw?: string) {
+  const m = (raw ?? "").toLowerCase();
+  if (m.includes("expired")) return "This code has expired — please request a new one.";
+  if (m.includes("invalid") || m.includes("incorrect")) return "Incorrect code. Please check and try again.";
+  if (m.includes("token") && m.includes("not found")) return "This code is no longer valid — request a new one.";
+  return raw || "Couldn't verify the code. Please try again.";
+}
+
 function AuthPage() {
-  const { session } = useAuth();
+  const { session, roles } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -43,8 +63,10 @@ function AuthPage() {
   const verifyOtpFn = useServerFn(verifyOtpEmail);
 
   useEffect(() => {
-    if (session) navigate({ to: "/dashboard", replace: true });
-  }, [session, navigate]);
+    if (session && roles.length) {
+      navigate({ to: landingPathFor(roles as AppRole[]), replace: true });
+    }
+  }, [session, roles, navigate]);
 
   useEffect(() => {
     timerRef.current = window.setInterval(() => {
@@ -73,11 +95,11 @@ function AuthPage() {
           return false;
         }
         if (res?.ok === false) {
-          toast.error(res.message ?? "Unable to send OTP");
+          toast.error(friendlySendError(res.message));
           return false;
         }
       } catch (e: any) {
-        toast.error(e?.message ?? "Failed to send OTP");
+        toast.error(friendlySendError(e?.message));
         return false;
       }
       if (isResend) {
@@ -98,18 +120,27 @@ function AuthPage() {
 
   async function verifyOtp(e: React.FormEvent) {
     e.preventDefault();
-    if (expiresIn === 0) { toast.error("OTP expired — please request a new one"); return; }
+    if (expiresIn === 0) { toast.error("This code has expired — please request a new one."); return; }
+    if (otp.trim().length !== 6) { toast.error("Enter all 6 digits of your code."); return; }
     setBusy(true);
-    const res: any = await verifyOtpFn({ data: { email, token: otp.trim() } });
+    let res: any;
+    try {
+      res = await verifyOtpFn({ data: { email, token: otp.trim() } });
+    } catch (err: any) {
+      setBusy(false);
+      toast.error(friendlyVerifyError(err?.message));
+      return;
+    }
     if (!res?.ok) {
       setBusy(false);
       if (res?.locked) {
         const mins = res.lockout_minutes ?? 15;
         setLockedUntil(Date.now() + mins * 60_000);
-        toast.error(`Too many failed attempts. Locked for ${mins} minutes.`);
+        toast.error(`Too many failed attempts. Account locked for ${mins} minutes.`);
       } else {
         const remaining = Math.max(0, (res?.threshold ?? 5) - (res?.failed_count ?? 0));
-        toast.error(`${res?.message ?? "Invalid OTP"} — ${remaining} attempt(s) left`);
+        const base = friendlyVerifyError(res?.message);
+        toast.error(remaining > 0 ? `${base} ${remaining} attempt${remaining === 1 ? "" : "s"} left.` : base);
       }
       return;
     }
@@ -118,8 +149,19 @@ function AuthPage() {
     });
     setBusy(false);
     if (sErr) { toast.error(sErr.message); return; }
+
+    // Resolve landing path from this user's fresh role rows — don't wait for context.
+    let dest = "/dashboard";
+    try {
+      const uid = (await supabase.auth.getUser()).data.user?.id;
+      if (uid) {
+        const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+        const userRoles = (roleRows ?? []).map((r) => r.role as AppRole);
+        if (userRoles.length) dest = landingPathFor(userRoles);
+      }
+    } catch { /* fall back to /dashboard */ }
     toast.success("Welcome back");
-    navigate({ to: "/dashboard" });
+    navigate({ to: dest, replace: true });
   }
 
   const locked = !!(lockedUntil && lockedUntil > Date.now());
@@ -241,10 +283,28 @@ function AuthPage() {
               <form onSubmit={verifyOtp} className="space-y-5 pt-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="otp">One-time code</Label>
-                  <Input id="otp" inputMode="numeric" pattern="[0-9]*" required autoFocus
-                    value={otp} onChange={(e)=>setOtp(e.target.value)}
-                    placeholder="••••••" maxLength={6}
-                    className="tracking-[0.6em] text-center text-2xl font-semibold h-14" />
+                  <div className="flex justify-center pt-1">
+                    <InputOTP
+                      maxLength={6}
+                      value={otp}
+                      onChange={setOtp}
+                      autoFocus
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} className="h-12 w-11 text-lg font-semibold" />
+                        <InputOTPSlot index={1} className="h-12 w-11 text-lg font-semibold" />
+                        <InputOTPSlot index={2} className="h-12 w-11 text-lg font-semibold" />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={3} className="h-12 w-11 text-lg font-semibold" />
+                        <InputOTPSlot index={4} className="h-12 w-11 text-lg font-semibold" />
+                        <InputOTPSlot index={5} className="h-12 w-11 text-lg font-semibold" />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
                   <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                     <Timer className="size-3" />
                     {expiresIn > 0
