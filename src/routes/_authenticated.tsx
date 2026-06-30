@@ -58,9 +58,8 @@ function ProtectedLayout() {
 }
 
 function LayoutInner() {
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
+
+
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("ss-erp-sidebar-collapsed") === "1";
