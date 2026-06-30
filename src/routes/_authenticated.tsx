@@ -100,7 +100,7 @@ function LayoutInner() {
         <UserMenu />
       </header>
       <div className="flex-1 flex min-h-0">
-        <div className="hidden md:block">
+        <div className="hidden md:block h-full">
           <AppSidebar collapsed={collapsed} />
         </div>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
