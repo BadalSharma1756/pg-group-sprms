@@ -241,9 +241,6 @@
   --font-body: "DM Sans", "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
-html {
-  zoom: 0.85;
-}
 
 html, body {
   font-family: var(--font-body);
