@@ -122,25 +122,31 @@ async function generateAndSendOtp(email: string, trigger: "user" | "admin", acto
   const code = gen.data.properties.email_otp as string;
   const verificationType = gen.data.properties.verification_type ?? "magiclink";
 
-  // Send via custom SMTP (Office 365).
-  const nodemailerMod: any = await import("nodemailer");
-  const nodemailer: any = nodemailerMod.default ?? nodemailerMod;
+  // Send via custom SMTP (Office 365) using a Worker-compatible mailer.
+  // nodemailer relies on Node net/tls and cannot run inside the Cloudflare
+  // Worker runtime — it triggers "Class extends value [object Module]".
+  const { WorkerMailer } = await import("worker-mailer");
   const fromName = process.env.SMTP_FROM_NAME ?? "SPRMS";
   const fromAddr = process.env.SMTP_FROM ?? process.env.SMTP_USER!;
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST!,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: Number(process.env.SMTP_PORT ?? 587) === 465,
-    auth: { user: process.env.SMTP_USER!, pass: process.env.SMTP_PASS! },
-    requireTLS: true,
-  });
+  const port = Number(process.env.SMTP_PORT ?? 587);
 
   let sendStatus: "sent" | "failed" = "sent";
   let sendError: string | null = null;
   try {
-    await transporter.sendMail({
-      from: `"${fromName}" <${fromAddr}>`,
-      to: email,
+    const mailer = await WorkerMailer.connect({
+      host: process.env.SMTP_HOST!,
+      port,
+      secure: port === 465,
+      startTls: port !== 465,
+      credentials: {
+        username: process.env.SMTP_USER!,
+        password: process.env.SMTP_PASS!,
+      },
+      authType: ["plain", "login"],
+    });
+    await mailer.send({
+      from: { name: fromName, email: fromAddr },
+      to: { email },
       subject: `${code} is your ${fromName} verification code`,
       text: `Your verification code is ${code}. It expires in 10 minutes.`,
       html: buildHtml(code, fromName),
