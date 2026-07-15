@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Factory, ShoppingCart, Boxes, ClipboardCheck, Trash2, BarChart3,
-  Building2, Layers, Truck, Ruler, Package, Wrench, History, Users,
+  Building2, Layers, Truck, Ruler, Package, Wrench, History, Users, UserCog,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ const baseGroups: { label: string; items: { to: string; icon: any; label: string
   { label: "Master Data", items: [
     { to: "/masters/products", icon: Package, label: "Products" },
     { to: "/masters/materials", icon: Wrench, label: "Materials" },
+    { to: "/masters/supervisors", icon: UserCog, label: "Supervisors" },
     { to: "/masters/pipe-sizes", icon: Ruler, label: "Pipe Sizes" },
     { to: "/masters/suppliers", icon: Truck, label: "Suppliers" },
     { to: "/masters/departments", icon: Layers, label: "Departments" },
