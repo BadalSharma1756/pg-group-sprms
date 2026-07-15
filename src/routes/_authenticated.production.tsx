@@ -11,11 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { EntryListView } from "@/components/entry-list-view";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calculator } from "lucide-react";
+import { Plus, Calculator, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum, fmtDate } from "@/lib/format";
 import { ExportMenu } from "@/components/export-menu";
-import { ExcelImport } from "@/components/excel-import";
 
 export const Route = createFileRoute("/_authenticated/production")({ component: Page });
 
@@ -25,15 +24,19 @@ function Page() {
   const { data } = useQuery({
     queryKey:["production"],
     queryFn: async () => (await supabase.from("production_entries")
-      .select("*, products(code,name), plants(code), departments(code), materials(code,name)")
+      .select("*, products(code,name), plants(code), departments(code), materials(code,name), supervisors(name)")
       .order("entry_date",{ascending:false}).limit(200)).data,
   });
-  const { data: products } = useQuery({ queryKey:["prod-products"], queryFn: async () => (await supabase.from("products").select("id,code,name,plant_id,department_id,material_id,total_meter,pipes_required_6m,pipes_required_4m")).data });
+  const { data: products } = useQuery({ queryKey:["prod-products"], queryFn: async () => (await supabase.from("products").select("id,code,name,plant_id,department_id,material_id,total_meter,pipes_required_6m,pipes_required_4m").eq("status","active").order("name")).data });
+  const { data: departments } = useQuery({ queryKey:["prod-departments"], queryFn: async () => (await supabase.from("departments").select("id,code,name,plant_id").eq("status","active").order("name")).data });
+  const { data: supervisors } = useQuery({ queryKey:["prod-supervisors"], queryFn: async () => (await supabase.from("supervisors").select("id,name,department_id").eq("status","active").order("name")).data });
 
   const [open,setOpen]=useState(false);
-type Shift = "morning"|"evening";
-  const [f,setF]=useState<{ entry_date:string; shift:Shift; product_id:string; quantity:number; remarks:string }>({ entry_date:new Date().toISOString().slice(0,10), shift:"morning", product_id:"", quantity:0, remarks:"" });
+  const [f,setF]=useState<{ product_id:string; department_id:string; supervisor_id:string; quantity:number; remarks:string }>({ product_id:"", department_id:"", supervisor_id:"", quantity:0, remarks:"" });
+  const [newProdOpen, setNewProdOpen] = useState(false);
+  const [newProdName, setNewProdName] = useState("");
   const product = (products ?? []).find((p:any)=>p.id===f.product_id);
+  const filteredSupervisors = (supervisors ?? []).filter((s:any)=> !f.department_id || s.department_id === f.department_id);
 
   const { data: bomRows } = useQuery({
     queryKey: ["bom-for-product", f.product_id],
@@ -51,95 +54,110 @@ type Shift = "morning"|"evening";
     }));
   },[product, bomRows, f.quantity]);
 
+  const addProduct = useMutation({
+    mutationFn: async () => {
+      const name = newProdName.trim();
+      if (!name) throw new Error("Enter a product name");
+      const dept = (departments ?? []).find((d:any)=> d.id === f.department_id) ?? (departments ?? [])[0];
+      if (!dept) throw new Error("Create a department first");
+      const code = "P-" + name.toUpperCase().replace(/[^A-Z0-9]+/g,"-").slice(0,20) + "-" + Math.random().toString(36).slice(2,5).toUpperCase();
+      const { data: p, error } = await supabase.from("products").insert({
+        code, name, plant_id: dept.plant_id, department_id: dept.id,
+      }).select("id,code,name,plant_id,department_id,material_id,total_meter,pipes_required_6m,pipes_required_4m").single();
+      if (error) throw error;
+      return p;
+    },
+    onSuccess: (p:any) => {
+      toast.success(`Product "${p.name}" added`);
+      setNewProdOpen(false); setNewProdName("");
+      qc.invalidateQueries({ queryKey:["prod-products"] });
+      setF((prev)=>({ ...prev, product_id: p.id }));
+    },
+    onError:(e:any)=>toast.error(e.message),
+  });
+
   const create = useMutation({
     mutationFn: async () => {
       if (!product) throw new Error("Pick a product");
+      if (!f.department_id) throw new Error("Pick a department");
+      const dept = (departments ?? []).find((d:any)=> d.id === f.department_id);
+      const plant_id = product.plant_id ?? dept?.plant_id;
+      if (!plant_id) throw new Error("No plant available");
+      // material_id: from product, else first BOM material
+      let material_id: string | null = product.material_id ?? null;
+      if (!material_id) {
+        const { data: bom } = await supabase.from("product_bom").select("material_id").eq("product_id", product.id).limit(1);
+        material_id = bom?.[0]?.material_id ?? null;
+      }
       const { error } = await supabase.from("production_entries").insert({
-        entry_date: f.entry_date, shift: f.shift, product_id: f.product_id,
-        plant_id: product.plant_id, department_id: product.department_id, material_id: product.material_id,
+        entry_date: new Date().toISOString().slice(0,10),
+        shift: "general",
+        product_id: f.product_id,
+        plant_id, department_id: f.department_id, material_id,
+        supervisor_id: f.supervisor_id || null,
         quantity: f.quantity, remarks: f.remarks, status: "approved",
       });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Production booked — inventory updated"); setOpen(false);
-      setF({ entry_date:new Date().toISOString().slice(0,10), shift:"morning", product_id:"", quantity:0, remarks:"" });
+      setF({ product_id:"", department_id:"", supervisor_id:"", quantity:0, remarks:"" });
       qc.invalidateQueries({queryKey:["production"]});
     },
     onError:(e:any)=>toast.error(e.message),
   });
 
-  const importRows = async (rows: Record<string, any>[]) => {
-    const errors: { row: number; msg: string }[] = [];
-    let ok = 0;
-    const prodByCode = new Map((products ?? []).map((p:any)=>[p.code, p]));
-    for (let i=0;i<rows.length;i++){
-      const r = rows[i];
-      const p:any = prodByCode.get(String(r.product_code).trim());
-      if (!p) { errors.push({ row: i+2, msg: `Unknown product_code ${r.product_code}` }); continue; }
-      const qty = Number(r.quantity);
-      if (!isFinite(qty) || qty <= 0) { errors.push({ row: i+2, msg: "quantity must be > 0" }); continue; }
-      const { error } = await supabase.from("production_entries").insert({
-        entry_date: r.entry_date, shift: r.shift ?? "general", product_id: p.id,
-        plant_id: p.plant_id, department_id: p.department_id, material_id: p.material_id,
-        quantity: qty, remarks: r.remarks ?? null, status: "approved",
-      });
-      if (error) errors.push({ row: i+2, msg: error.message }); else ok++;
-    }
-    qc.invalidateQueries({queryKey:["production"]});
-    return { ok, errors };
-  };
-
   return (
     <>
-      <PageHeader title="Production" subtitle="Daily shift-wise production booking with automatic raw-material consumption"
+      <PageHeader title="Production" subtitle="Manual production entry with automatic BOM-based material consumption"
         actions={
           <div className="flex items-center gap-2">
           <ExportMenu filename="production_entries" title="Production Entries"
             rows={data ?? []}
             columns={[
               { header:"Date", accessor:(r:any)=>r.entry_date },
-              { header:"Shift", accessor:(r:any)=>r.shift },
               { header:"Product", accessor:(r:any)=> r.products ? `${r.products.code} ${r.products.name}` : "" },
-              { header:"Plant", accessor:(r:any)=>r.plants?.code ?? "" },
               { header:"Dept", accessor:(r:any)=>r.departments?.code ?? "" },
+              { header:"Supervisor", accessor:(r:any)=>r.supervisors?.name ?? "" },
               { header:"Qty", accessor:(r:any)=>r.quantity },
               { header:"Meters", accessor:(r:any)=>r.total_meter_consumed },
-              { header:"6m pipes", accessor:(r:any)=>r.pipes_consumed_6m },
-              { header:"4m pipes", accessor:(r:any)=>r.pipes_consumed_4m },
             ]} />
-          <ExcelImport templateName="production_template"
-            fields={[
-              { key:"entry_date", label:"entry_date", required:true, type:"date" },
-              { key:"shift", label:"shift" },
-              { key:"product_code", label:"product_code", required:true },
-              { key:"quantity", label:"quantity", required:true, type:"number" },
-              { key:"remarks", label:"remarks" },
-            ]}
-            sample={[new Date().toISOString().slice(0,10), "morning", "P-001", 10, "sample"]}
-            onImport={importRows} />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="size-4 mr-1"/>New entry</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Book production</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Date</Label><Input type="date" value={f.entry_date} onChange={(e)=>setF({...f, entry_date:e.target.value})}/></div>
-                  <div><Label>Shift</Label>
-                    <Select value={f.shift} onValueChange={(v)=>setF({...f, shift: v as Shift})}>
-                      <SelectTrigger><SelectValue/></SelectTrigger>
+                <div><Label>Product</Label>
+                  <div className="flex gap-2">
+                    <Select value={f.product_id} onValueChange={(v)=>{ if(v==="__other__"){ setNewProdOpen(true); } else setF({...f, product_id:v}); }}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Select product"/></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="morning">Morning</SelectItem>
-                        <SelectItem value="evening">Evening</SelectItem>
-                        <SelectItem value="general">General</SelectItem>
+                        {(products ?? []).map((p:any)=> <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        <SelectItem value="__other__">+ Other (add new)</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Button type="button" variant="outline" size="icon" onClick={()=>setNewProdOpen(true)} title="Add new product"><PlusCircle className="size-4"/></Button>
                   </div>
+                  {newProdOpen && (
+                    <div className="mt-2 flex gap-2 rounded-md border p-2 bg-muted/40">
+                      <Input autoFocus placeholder="New product name" value={newProdName} onChange={(e)=>setNewProdName(e.target.value)} />
+                      <Button size="sm" onClick={()=>addProduct.mutate()} disabled={addProduct.isPending || !newProdName.trim()}>Add</Button>
+                      <Button size="sm" variant="ghost" onClick={()=>{ setNewProdOpen(false); setNewProdName(""); }}>Cancel</Button>
+                    </div>
+                  )}
                 </div>
-                <div><Label>Product</Label>
-                  <Select value={f.product_id} onValueChange={(v)=>setF({...f, product_id:v})}>
-                    <SelectTrigger><SelectValue placeholder="Product"/></SelectTrigger>
-                    <SelectContent>{(products ?? []).map((p:any)=> <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Department</Label>
+                    <Select value={f.department_id} onValueChange={(v)=>setF({...f, department_id:v, supervisor_id:""})}>
+                      <SelectTrigger><SelectValue placeholder="Department"/></SelectTrigger>
+                      <SelectContent>{(departments ?? []).map((d:any)=> <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Supervisor</Label>
+                    <Select value={f.supervisor_id} onValueChange={(v)=>setF({...f, supervisor_id:v})} disabled={!f.department_id}>
+                      <SelectTrigger><SelectValue placeholder={f.department_id ? "Supervisor" : "Pick department first"}/></SelectTrigger>
+                      <SelectContent>{filteredSupervisors.map((s:any)=> <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div><Label>Quantity</Label><Input type="number" value={f.quantity} onChange={(e)=>setF({...f, quantity:Number(e.target.value)})}/></div>
                 <div><Label>Remarks</Label><Textarea rows={2} value={f.remarks} onChange={(e)=>setF({...f, remarks:e.target.value})}/></div>
@@ -161,8 +179,13 @@ type Shift = "morning"|"evening";
                     </div>
                   </div>
                 )}
+                {product && (!preview || preview.length === 0) && (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-2 text-xs text-amber-900 dark:text-amber-200">
+                    No BOM defined for this product yet. Add materials from Products → BOM.
+                  </div>
+                )}
               </div>
-              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.product_id || f.quantity<=0 || create.isPending}>Save</Button></DialogFooter>
+              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.product_id || !f.department_id || f.quantity<=0 || create.isPending}>Save</Button></DialogFooter>
             </DialogContent>
           </Dialog>
           </div>
@@ -177,23 +200,18 @@ type Shift = "morning"|"evening";
           columns={[
             { header:"Product", cell:(r:any)=> r.products ? `${r.products.code} — ${r.products.name}` : "—" },
             { header:"Date", cell:(r:any)=> fmtDate(r.entry_date) },
-            { header:"Shift", cell:(r:any)=> <Badge variant="outline" className="capitalize">{r.shift}</Badge> },
-            { header:"Plant / Dept", cell:(r:any)=> `${r.plants?.code ?? "—"} / ${r.departments?.code ?? "—"}` },
+            { header:"Dept", cell:(r:any)=> r.departments?.code ?? "—" },
+            { header:"Supervisor", cell:(r:any)=> r.supervisors?.name ?? <Badge variant="outline">—</Badge> },
             { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
             { header:"Meters", cell:(r:any)=> fmtNum(r.total_meter_consumed,3) },
-            { header:"6 m / 4 m", cell:(r:any)=> `${fmtNum(r.pipes_consumed_6m,2)} / ${fmtNum(r.pipes_consumed_4m,2)}` },
           ]}
           details={[
             { label:"Product", value:(r:any)=> r.products ? `${r.products.code} — ${r.products.name}` : "—", full:true },
             { label:"Date", value:(r:any)=> fmtDate(r.entry_date) },
-            { label:"Shift", value:(r:any)=> <span className="capitalize">{r.shift}</span> },
-            { label:"Plant", value:(r:any)=> r.plants?.code ?? "—" },
             { label:"Department", value:(r:any)=> r.departments?.code ?? "—" },
+            { label:"Supervisor", value:(r:any)=> r.supervisors?.name ?? "—" },
             { label:"Quantity", value:(r:any)=> fmtNum(r.quantity) },
-            { label:"Material", value:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—" },
             { label:"Total meters consumed", value:(r:any)=> fmtNum(r.total_meter_consumed,3) },
-            { label:"6m pipes consumed", value:(r:any)=> fmtNum(r.pipes_consumed_6m,2) },
-            { label:"4m pipes consumed", value:(r:any)=> fmtNum(r.pipes_consumed_4m,2) },
             { label:"Remarks", value:(r:any)=> r.remarks || "—", full:true },
           ]}
         />
