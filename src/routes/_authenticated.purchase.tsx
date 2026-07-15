@@ -17,11 +17,11 @@ import { ExportMenu } from "@/components/export-menu";
 
 export const Route = createFileRoute("/_authenticated/purchase")({ component: Page });
 
-async function ensureDirectSupplier(plant_id: string) {
+async function ensureDirectSupplier() {
   const { data: existing } = await supabase.from("suppliers").select("id").eq("code","DIRECT").maybeSingle();
   if (existing?.id) return existing.id as string;
   const { data, error } = await supabase.from("suppliers").insert({
-    code: "DIRECT", name: "Direct Purchase", plant_id, status: "active",
+    code: "DIRECT", name: "Direct Purchase", status: "active",
   }).select("id").single();
   if (error) throw error;
   return data.id as string;
@@ -42,7 +42,7 @@ function Page() {
     mutationFn: async () => {
       const plant_id = (plants ?? [])[0]?.id;
       if (!plant_id) throw new Error("No plant configured");
-      const supplier_id = await ensureDirectSupplier(plant_id);
+      const supplier_id = await ensureDirectSupplier();
       const { error } = await supabase.from("purchase_orders").insert({
         po_date: f.po_date, material_id: f.material_id, plant_id, supplier_id,
         quantity: f.quantity, received_qty: f.quantity, rate: 0, gst_pct: 0, transport: 0,
