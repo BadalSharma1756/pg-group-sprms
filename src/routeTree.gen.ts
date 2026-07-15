@@ -21,6 +21,7 @@ import { Route as AuthenticatedGapVerificationRouteImport } from './routes/_auth
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authenticated.audit.index'
 import { Route as AuthenticatedMastersSuppliersRouteImport } from './routes/_authenticated.masters.suppliers'
+import { Route as AuthenticatedMastersSupervisorsRouteImport } from './routes/_authenticated.masters.supervisors'
 import { Route as AuthenticatedMastersProductsRouteImport } from './routes/_authenticated.masters.products'
 import { Route as AuthenticatedMastersPlantsRouteImport } from './routes/_authenticated.masters.plants'
 import { Route as AuthenticatedMastersPipeSizesRouteImport } from './routes/_authenticated.masters.pipe-sizes'
@@ -91,6 +92,12 @@ const AuthenticatedMastersSuppliersRoute =
     path: '/masters/suppliers',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedMastersSupervisorsRoute =
+  AuthenticatedMastersSupervisorsRouteImport.update({
+    id: '/masters/supervisors',
+    path: '/masters/supervisors',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedMastersProductsRoute =
   AuthenticatedMastersProductsRouteImport.update({
     id: '/masters/products',
@@ -157,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
   '/masters/plants': typeof AuthenticatedMastersPlantsRoute
   '/masters/products': typeof AuthenticatedMastersProductsRoute
+  '/masters/supervisors': typeof AuthenticatedMastersSupervisorsRoute
   '/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
   '/audit/': typeof AuthenticatedAuditIndexRoute
 }
@@ -178,6 +186,7 @@ export interface FileRoutesByTo {
   '/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
   '/masters/plants': typeof AuthenticatedMastersPlantsRoute
   '/masters/products': typeof AuthenticatedMastersProductsRoute
+  '/masters/supervisors': typeof AuthenticatedMastersSupervisorsRoute
   '/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
   '/audit': typeof AuthenticatedAuditIndexRoute
 }
@@ -201,6 +210,7 @@ export interface FileRoutesById {
   '/_authenticated/masters/pipe-sizes': typeof AuthenticatedMastersPipeSizesRoute
   '/_authenticated/masters/plants': typeof AuthenticatedMastersPlantsRoute
   '/_authenticated/masters/products': typeof AuthenticatedMastersProductsRoute
+  '/_authenticated/masters/supervisors': typeof AuthenticatedMastersSupervisorsRoute
   '/_authenticated/masters/suppliers': typeof AuthenticatedMastersSuppliersRoute
   '/_authenticated/audit/': typeof AuthenticatedAuditIndexRoute
 }
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/masters/pipe-sizes'
     | '/masters/plants'
     | '/masters/products'
+    | '/masters/supervisors'
     | '/masters/suppliers'
     | '/audit/'
   fileRoutesByTo: FileRoutesByTo
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/masters/pipe-sizes'
     | '/masters/plants'
     | '/masters/products'
+    | '/masters/supervisors'
     | '/masters/suppliers'
     | '/audit'
   id:
@@ -267,6 +279,7 @@ export interface FileRouteTypes {
     | '/_authenticated/masters/pipe-sizes'
     | '/_authenticated/masters/plants'
     | '/_authenticated/masters/products'
+    | '/_authenticated/masters/supervisors'
     | '/_authenticated/masters/suppliers'
     | '/_authenticated/audit/'
   fileRoutesById: FileRoutesById
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMastersSuppliersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/masters/supervisors': {
+      id: '/_authenticated/masters/supervisors'
+      path: '/masters/supervisors'
+      fullPath: '/masters/supervisors'
+      preLoaderRoute: typeof AuthenticatedMastersSupervisorsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/masters/products': {
       id: '/_authenticated/masters/products'
       path: '/masters/products'
@@ -438,6 +458,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMastersPipeSizesRoute: typeof AuthenticatedMastersPipeSizesRoute
   AuthenticatedMastersPlantsRoute: typeof AuthenticatedMastersPlantsRoute
   AuthenticatedMastersProductsRoute: typeof AuthenticatedMastersProductsRoute
+  AuthenticatedMastersSupervisorsRoute: typeof AuthenticatedMastersSupervisorsRoute
   AuthenticatedMastersSuppliersRoute: typeof AuthenticatedMastersSuppliersRoute
   AuthenticatedAuditIndexRoute: typeof AuthenticatedAuditIndexRoute
 }
@@ -458,6 +479,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMastersPipeSizesRoute: AuthenticatedMastersPipeSizesRoute,
   AuthenticatedMastersPlantsRoute: AuthenticatedMastersPlantsRoute,
   AuthenticatedMastersProductsRoute: AuthenticatedMastersProductsRoute,
+  AuthenticatedMastersSupervisorsRoute: AuthenticatedMastersSupervisorsRoute,
   AuthenticatedMastersSuppliersRoute: AuthenticatedMastersSuppliersRoute,
   AuthenticatedAuditIndexRoute: AuthenticatedAuditIndexRoute,
 }

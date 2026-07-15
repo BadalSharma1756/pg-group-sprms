@@ -406,6 +406,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          message: string
+          read_at: string | null
+          ref_id: string | null
+          ref_table: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          message: string
+          read_at?: string | null
+          ref_id?: string | null
+          ref_table?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string
+          read_at?: string | null
+          ref_id?: string | null
+          ref_table?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       otp_challenges: {
         Row: {
           code_hash: string
@@ -591,6 +624,7 @@ export type Database = {
           remarks: string | null
           shift: Database["public"]["Enums"]["shift_type"]
           status: Database["public"]["Enums"]["approval_status"]
+          supervisor_id: string | null
           total_meter_consumed: number
           updated_at: string
         }
@@ -613,6 +647,7 @@ export type Database = {
           remarks?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["approval_status"]
+          supervisor_id?: string | null
           total_meter_consumed?: number
           updated_at?: string
         }
@@ -635,6 +670,7 @@ export type Database = {
           remarks?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["approval_status"]
+          supervisor_id?: string | null
           total_meter_consumed?: number
           updated_at?: string
         }
@@ -681,6 +717,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "production_entries_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
+          },
         ]
       }
       products: {
@@ -689,12 +732,12 @@ export type Database = {
           code: string
           created_at: string
           department_id: string
-          height_mm: number
+          height_mm: number | null
           id: string
-          length_mm: number
-          material_id: string
+          length_mm: number | null
+          material_id: string | null
           name: string
-          pipe_size_id: string
+          pipe_size_id: string | null
           pipes_required_4m: number
           pipes_required_6m: number
           plant_id: string
@@ -703,19 +746,19 @@ export type Database = {
           total_meter: number
           unit: Database["public"]["Enums"]["unit_type"]
           updated_at: string
-          width_mm: number
+          width_mm: number | null
         }
         Insert: {
           category?: string | null
           code: string
           created_at?: string
           department_id: string
-          height_mm: number
+          height_mm?: number | null
           id?: string
-          length_mm: number
-          material_id: string
+          length_mm?: number | null
+          material_id?: string | null
           name: string
-          pipe_size_id: string
+          pipe_size_id?: string | null
           pipes_required_4m?: number
           pipes_required_6m?: number
           plant_id: string
@@ -724,19 +767,19 @@ export type Database = {
           total_meter?: number
           unit?: Database["public"]["Enums"]["unit_type"]
           updated_at?: string
-          width_mm: number
+          width_mm?: number | null
         }
         Update: {
           category?: string | null
           code?: string
           created_at?: string
           department_id?: string
-          height_mm?: number
+          height_mm?: number | null
           id?: string
-          length_mm?: number
-          material_id?: string
+          length_mm?: number | null
+          material_id?: string | null
           name?: string
-          pipe_size_id?: string
+          pipe_size_id?: string | null
           pipes_required_4m?: number
           pipes_required_6m?: number
           plant_id?: string
@@ -745,7 +788,7 @@ export type Database = {
           total_meter?: number
           unit?: Database["public"]["Enums"]["unit_type"]
           updated_at?: string
-          width_mm?: number
+          width_mm?: number | null
         }
         Relationships: [
           {
@@ -1045,6 +1088,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_current_stock"
             referencedColumns: ["plant_id"]
+          },
+        ]
+      }
+      supervisors: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          name: string
+          phone: string | null
+          status: Database["public"]["Enums"]["entity_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          name: string
+          phone?: string | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervisors_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
           },
         ]
       }
