@@ -62,27 +62,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "audit_logs_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "audit_logs_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "plants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "audit_logs_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
-          },
-          {
             foreignKeyName: "audit_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -136,8 +115,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          plant_id: string
-          status: Database["public"]["Enums"]["entity_status"]
+          status: string
           updated_at: string
         }
         Insert: {
@@ -145,8 +123,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          plant_id: string
-          status?: Database["public"]["Enums"]["entity_status"]
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -154,149 +131,166 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
-          plant_id?: string
-          status?: Database["public"]["Enums"]["entity_status"]
+          status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      fabrication_consumptions: {
+        Row: {
+          consumed_qty: number
+          created_at: string
+          fabrication_id: string
+          id: string
+          material_id: string
+          required_qty: number
+          uom: Database["public"]["Enums"]["material_uom"]
+        }
+        Insert: {
+          consumed_qty: number
+          created_at?: string
+          fabrication_id: string
+          id?: string
+          material_id: string
+          required_qty: number
+          uom: Database["public"]["Enums"]["material_uom"]
+        }
+        Update: {
+          consumed_qty?: number
+          created_at?: string
+          fabrication_id?: string
+          id?: string
+          material_id?: string
+          required_qty?: number
+          uom?: Database["public"]["Enums"]["material_uom"]
         }
         Relationships: [
           {
-            foreignKeyName: "departments_plant_id_fkey"
-            columns: ["plant_id"]
+            foreignKeyName: "fabrication_consumptions_fabrication_id_fkey"
+            columns: ["fabrication_id"]
             isOneToOne: false
-            referencedRelation: "plants"
+            referencedRelation: "fabrication_entries"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "departments_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
-          },
-        ]
-      }
-      gap_verifications: {
-        Row: {
-          actual_gap: number
-          allowed_wastage: number
-          created_at: string
-          created_by: string | null
-          difference: number
-          expected_consumption: number
-          id: string
-          material_id: string
-          physical_stock: number
-          plant_id: string
-          purchased_qty: number
-          remarks: string | null
-          system_stock: number
-          verify_date: string
-        }
-        Insert: {
-          actual_gap?: number
-          allowed_wastage?: number
-          created_at?: string
-          created_by?: string | null
-          difference?: number
-          expected_consumption?: number
-          id?: string
-          material_id: string
-          physical_stock?: number
-          plant_id: string
-          purchased_qty?: number
-          remarks?: string | null
-          system_stock?: number
-          verify_date?: string
-        }
-        Update: {
-          actual_gap?: number
-          allowed_wastage?: number
-          created_at?: string
-          created_by?: string | null
-          difference?: number
-          expected_consumption?: number
-          id?: string
-          material_id?: string
-          physical_stock?: number
-          plant_id?: string
-          purchased_qty?: number
-          remarks?: string | null
-          system_stock?: number
-          verify_date?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gap_verifications_material_id_fkey"
+            foreignKeyName: "fabrication_consumptions_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "materials"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "gap_verifications_material_id_fkey"
+            foreignKeyName: "fabrication_consumptions_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "v_current_stock"
             referencedColumns: ["material_id"]
           },
+        ]
+      }
+      fabrication_entries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          entry_date: string
+          entry_no: string
+          id: string
+          product_id: string
+          quantity: number
+          remarks: string | null
+          supervisor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          entry_date?: string
+          entry_no: string
+          id?: string
+          product_id: string
+          quantity: number
+          remarks?: string | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          entry_date?: string
+          entry_no?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          remarks?: string | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "gap_verifications_plant_id_fkey"
-            columns: ["plant_id"]
+            foreignKeyName: "fabrication_entries_department_id_fkey"
+            columns: ["department_id"]
             isOneToOne: false
-            referencedRelation: "plants"
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "gap_verifications_plant_id_fkey"
-            columns: ["plant_id"]
+            foreignKeyName: "fabrication_entries_product_id_fkey"
+            columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fabrication_entries_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisors"
+            referencedColumns: ["id"]
           },
         ]
       }
       inventory_transactions: {
         Row: {
           created_at: string
-          created_by: string | null
           id: string
           material_id: string
-          plant_id: string
           qty_in: number
           qty_out: number
           ref_id: string | null
           ref_table: string | null
           remarks: string | null
           txn_date: string
-          txn_type: Database["public"]["Enums"]["txn_type"]
+          txn_type: Database["public"]["Enums"]["inventory_txn_type"]
+          user_id: string | null
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
           id?: string
           material_id: string
-          plant_id: string
           qty_in?: number
           qty_out?: number
           ref_id?: string | null
           ref_table?: string | null
           remarks?: string | null
           txn_date?: string
-          txn_type: Database["public"]["Enums"]["txn_type"]
+          txn_type: Database["public"]["Enums"]["inventory_txn_type"]
+          user_id?: string | null
         }
         Update: {
           created_at?: string
-          created_by?: string | null
           id?: string
           material_id?: string
-          plant_id?: string
           qty_in?: number
           qty_out?: number
           ref_id?: string | null
           ref_table?: string | null
           remarks?: string | null
           txn_date?: string
-          txn_type?: Database["public"]["Enums"]["txn_type"]
+          txn_type?: Database["public"]["Enums"]["inventory_txn_type"]
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -313,129 +307,163 @@ export type Database = {
             referencedRelation: "v_current_stock"
             referencedColumns: ["material_id"]
           },
+        ]
+      }
+      material_receipt_items: {
+        Row: {
+          created_at: string
+          id: string
+          material_id: string
+          po_item_id: string
+          receipt_id: string
+          received_qty: number
+          remarks: string | null
+          uom: Database["public"]["Enums"]["material_uom"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          material_id: string
+          po_item_id: string
+          receipt_id: string
+          received_qty: number
+          remarks?: string | null
+          uom: Database["public"]["Enums"]["material_uom"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          material_id?: string
+          po_item_id?: string
+          receipt_id?: string
+          received_qty?: number
+          remarks?: string | null
+          uom?: Database["public"]["Enums"]["material_uom"]
+        }
+        Relationships: [
           {
-            foreignKeyName: "inventory_transactions_plant_id_fkey"
-            columns: ["plant_id"]
+            foreignKeyName: "material_receipt_items_material_id_fkey"
+            columns: ["material_id"]
             isOneToOne: false
-            referencedRelation: "plants"
+            referencedRelation: "materials"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "inventory_transactions_plant_id_fkey"
-            columns: ["plant_id"]
+            foreignKeyName: "material_receipt_items_material_id_fkey"
+            columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
+            referencedColumns: ["material_id"]
+          },
+          {
+            foreignKeyName: "material_receipt_items_po_item_id_fkey"
+            columns: ["po_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_receipt_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "material_receipts"
+            referencedColumns: ["id"]
           },
         ]
       }
-      locations: {
+      material_receipts: {
         Row: {
-          code: string
           created_at: string
+          created_by: string | null
           id: string
-          name: string
-          region: string | null
-          status: Database["public"]["Enums"]["entity_status"]
+          invoice_date: string
+          invoice_no: string
+          po_id: string
+          receipt_no: string
+          remarks: string | null
+          supplier_id: string
           updated_at: string
         }
         Insert: {
-          code: string
           created_at?: string
+          created_by?: string | null
           id?: string
-          name: string
-          region?: string | null
-          status?: Database["public"]["Enums"]["entity_status"]
+          invoice_date?: string
+          invoice_no: string
+          po_id: string
+          receipt_no: string
+          remarks?: string | null
+          supplier_id: string
           updated_at?: string
         }
         Update: {
-          code?: string
           created_at?: string
+          created_by?: string | null
           id?: string
-          name?: string
-          region?: string | null
-          status?: Database["public"]["Enums"]["entity_status"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      materials: {
-        Row: {
-          allowed_wastage_pct: number
-          code: string
-          created_at: string
-          id: string
-          name: string
-          pipe_size_id: string | null
-          reorder_level: number
-          status: Database["public"]["Enums"]["entity_status"]
-          unit: string
-          updated_at: string
-        }
-        Insert: {
-          allowed_wastage_pct?: number
-          code: string
-          created_at?: string
-          id?: string
-          name: string
-          pipe_size_id?: string | null
-          reorder_level?: number
-          status?: Database["public"]["Enums"]["entity_status"]
-          unit?: string
-          updated_at?: string
-        }
-        Update: {
-          allowed_wastage_pct?: number
-          code?: string
-          created_at?: string
-          id?: string
-          name?: string
-          pipe_size_id?: string | null
-          reorder_level?: number
-          status?: Database["public"]["Enums"]["entity_status"]
-          unit?: string
+          invoice_date?: string
+          invoice_no?: string
+          po_id?: string
+          receipt_no?: string
+          remarks?: string | null
+          supplier_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "materials_pipe_size_id_fkey"
-            columns: ["pipe_size_id"]
+            foreignKeyName: "material_receipts_po_id_fkey"
+            columns: ["po_id"]
             isOneToOne: false
-            referencedRelation: "pipe_sizes"
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_receipts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
       }
-      notifications: {
+      materials: {
         Row: {
+          category: string | null
+          code: string
           created_at: string
+          description: string | null
           id: string
-          kind: string
-          message: string
-          read_at: string | null
-          ref_id: string | null
-          ref_table: string | null
-          user_id: string | null
+          min_stock: number
+          name: string
+          reorder_level: number
+          status: string
+          uom: Database["public"]["Enums"]["material_uom"]
+          updated_at: string
         }
         Insert: {
+          category?: string | null
+          code: string
           created_at?: string
+          description?: string | null
           id?: string
-          kind: string
-          message: string
-          read_at?: string | null
-          ref_id?: string | null
-          ref_table?: string | null
-          user_id?: string | null
+          min_stock?: number
+          name: string
+          reorder_level?: number
+          status?: string
+          uom?: Database["public"]["Enums"]["material_uom"]
+          updated_at?: string
         }
         Update: {
+          category?: string | null
+          code?: string
           created_at?: string
+          description?: string | null
           id?: string
-          kind?: string
-          message?: string
-          read_at?: string | null
-          ref_id?: string | null
-          ref_table?: string | null
-          user_id?: string | null
+          min_stock?: number
+          name?: string
+          reorder_level?: number
+          status?: string
+          uom?: Database["public"]["Enums"]["material_uom"]
+          updated_at?: string
         }
         Relationships: []
       }
@@ -472,112 +500,32 @@ export type Database = {
         }
         Relationships: []
       }
-      pipe_sizes: {
-        Row: {
-          code: string
-          created_at: string
-          id: string
-          outer_diameter_mm: number
-          status: Database["public"]["Enums"]["entity_status"]
-          thickness_mm: number
-          updated_at: string
-          weight_per_meter_kg: number | null
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          id?: string
-          outer_diameter_mm: number
-          status?: Database["public"]["Enums"]["entity_status"]
-          thickness_mm: number
-          updated_at?: string
-          weight_per_meter_kg?: number | null
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          id?: string
-          outer_diameter_mm?: number
-          status?: Database["public"]["Enums"]["entity_status"]
-          thickness_mm?: number
-          updated_at?: string
-          weight_per_meter_kg?: number | null
-        }
-        Relationships: []
-      }
-      plants: {
-        Row: {
-          code: string
-          created_at: string
-          id: string
-          location: string | null
-          location_id: string | null
-          name: string
-          status: Database["public"]["Enums"]["entity_status"]
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          id?: string
-          location?: string | null
-          location_id?: string | null
-          name: string
-          status?: Database["public"]["Enums"]["entity_status"]
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          id?: string
-          location?: string | null
-          location_id?: string | null
-          name?: string
-          status?: Database["public"]["Enums"]["entity_status"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "plants_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       product_bom: {
         Row: {
           created_at: string
           id: string
-          is_auto: boolean
           material_id: string
-          notes: string | null
           product_id: string
           qty_per_unit: number
-          uom: string
+          uom: Database["public"]["Enums"]["material_uom"]
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
-          is_auto?: boolean
           material_id: string
-          notes?: string | null
           product_id: string
           qty_per_unit: number
-          uom?: string
+          uom: Database["public"]["Enums"]["material_uom"]
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
-          is_auto?: boolean
           material_id?: string
-          notes?: string | null
           product_id?: string
           qty_per_unit?: number
-          uom?: string
+          uom?: Database["public"]["Enums"]["material_uom"]
           updated_at?: string
         }
         Relationships: [
@@ -604,236 +552,35 @@ export type Database = {
           },
         ]
       }
-      production_entries: {
-        Row: {
-          approved_at: string | null
-          approved_by: string | null
-          created_at: string
-          created_by: string | null
-          department_id: string
-          entry_date: string
-          entry_no: string
-          id: string
-          material_id: string | null
-          meter_per_unit: number
-          pipes_consumed_4m: number
-          pipes_consumed_6m: number
-          plant_id: string
-          product_id: string
-          quantity: number
-          remarks: string | null
-          shift: Database["public"]["Enums"]["shift_type"]
-          status: Database["public"]["Enums"]["approval_status"]
-          supervisor_id: string | null
-          total_meter_consumed: number
-          updated_at: string
-        }
-        Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
-          created_at?: string
-          created_by?: string | null
-          department_id: string
-          entry_date?: string
-          entry_no?: string
-          id?: string
-          material_id?: string | null
-          meter_per_unit?: number
-          pipes_consumed_4m?: number
-          pipes_consumed_6m?: number
-          plant_id: string
-          product_id: string
-          quantity: number
-          remarks?: string | null
-          shift?: Database["public"]["Enums"]["shift_type"]
-          status?: Database["public"]["Enums"]["approval_status"]
-          supervisor_id?: string | null
-          total_meter_consumed?: number
-          updated_at?: string
-        }
-        Update: {
-          approved_at?: string | null
-          approved_by?: string | null
-          created_at?: string
-          created_by?: string | null
-          department_id?: string
-          entry_date?: string
-          entry_no?: string
-          id?: string
-          material_id?: string | null
-          meter_per_unit?: number
-          pipes_consumed_4m?: number
-          pipes_consumed_6m?: number
-          plant_id?: string
-          product_id?: string
-          quantity?: number
-          remarks?: string | null
-          shift?: Database["public"]["Enums"]["shift_type"]
-          status?: Database["public"]["Enums"]["approval_status"]
-          supervisor_id?: string | null
-          total_meter_consumed?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_entries_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "production_entries_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "materials"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "production_entries_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["material_id"]
-          },
-          {
-            foreignKeyName: "production_entries_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "plants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "production_entries_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
-          },
-          {
-            foreignKeyName: "production_entries_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "production_entries_supervisor_id_fkey"
-            columns: ["supervisor_id"]
-            isOneToOne: false
-            referencedRelation: "supervisors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       products: {
         Row: {
-          category: string | null
           code: string
           created_at: string
-          department_id: string
-          height_mm: number | null
+          description: string | null
           id: string
-          length_mm: number | null
-          material_id: string | null
           name: string
-          pipe_size_id: string | null
-          pipes_required_4m: number
-          pipes_required_6m: number
-          plant_id: string
-          status: Database["public"]["Enums"]["entity_status"]
-          total_feet: number
-          total_meter: number
-          unit: Database["public"]["Enums"]["unit_type"]
+          status: string
           updated_at: string
-          width_mm: number | null
         }
         Insert: {
-          category?: string | null
           code: string
           created_at?: string
-          department_id: string
-          height_mm?: number | null
+          description?: string | null
           id?: string
-          length_mm?: number | null
-          material_id?: string | null
           name: string
-          pipe_size_id?: string | null
-          pipes_required_4m?: number
-          pipes_required_6m?: number
-          plant_id: string
-          status?: Database["public"]["Enums"]["entity_status"]
-          total_feet?: number
-          total_meter?: number
-          unit?: Database["public"]["Enums"]["unit_type"]
+          status?: string
           updated_at?: string
-          width_mm?: number | null
         }
         Update: {
-          category?: string | null
           code?: string
           created_at?: string
-          department_id?: string
-          height_mm?: number | null
+          description?: string | null
           id?: string
-          length_mm?: number | null
-          material_id?: string | null
           name?: string
-          pipe_size_id?: string | null
-          pipes_required_4m?: number
-          pipes_required_6m?: number
-          plant_id?: string
-          status?: Database["public"]["Enums"]["entity_status"]
-          total_feet?: number
-          total_meter?: number
-          unit?: Database["public"]["Enums"]["unit_type"]
+          status?: string
           updated_at?: string
-          width_mm?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "products_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "materials"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["material_id"]
-          },
-          {
-            foreignKeyName: "products_pipe_size_id_fkey"
-            columns: ["pipe_size_id"]
-            isOneToOne: false
-            referencedRelation: "pipe_sizes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "plants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -872,131 +619,119 @@ export type Database = {
           status?: Database["public"]["Enums"]["entity_status"]
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_default_plant_id_fkey"
-            columns: ["default_plant_id"]
-            isOneToOne: false
-            referencedRelation: "plants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_default_plant_id_fkey"
-            columns: ["default_plant_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
-          },
-          {
-            foreignKeyName: "profiles_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      purchase_orders: {
+      purchase_order_items: {
         Row: {
-          approved_at: string | null
-          approved_by: string | null
+          amount: number
           created_at: string
-          created_by: string | null
-          gst_pct: number
           id: string
-          invoice_date: string | null
-          invoice_no: string | null
           material_id: string
+          ordered_qty: number
           pending_qty: number
-          plant_id: string
-          po_date: string
-          po_no: string
-          quantity: number
+          po_id: string
           rate: number
           received_qty: number
-          remarks: string | null
-          status: Database["public"]["Enums"]["approval_status"]
-          supplier_id: string
-          total_amount: number
-          transport: number
+          uom: Database["public"]["Enums"]["material_uom"]
           updated_at: string
         }
         Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
+          amount?: number
           created_at?: string
-          created_by?: string | null
-          gst_pct?: number
           id?: string
-          invoice_date?: string | null
-          invoice_no?: string | null
           material_id: string
+          ordered_qty: number
           pending_qty?: number
-          plant_id: string
-          po_date?: string
-          po_no?: string
-          quantity: number
+          po_id: string
           rate?: number
           received_qty?: number
-          remarks?: string | null
-          status?: Database["public"]["Enums"]["approval_status"]
-          supplier_id: string
-          total_amount?: number
-          transport?: number
+          uom: Database["public"]["Enums"]["material_uom"]
           updated_at?: string
         }
         Update: {
-          approved_at?: string | null
-          approved_by?: string | null
+          amount?: number
           created_at?: string
-          created_by?: string | null
-          gst_pct?: number
           id?: string
-          invoice_date?: string | null
-          invoice_no?: string | null
           material_id?: string
+          ordered_qty?: number
           pending_qty?: number
-          plant_id?: string
-          po_date?: string
-          po_no?: string
-          quantity?: number
+          po_id?: string
           rate?: number
           received_qty?: number
-          remarks?: string | null
-          status?: Database["public"]["Enums"]["approval_status"]
-          supplier_id?: string
-          total_amount?: number
-          transport?: number
+          uom?: Database["public"]["Enums"]["material_uom"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "purchase_orders_material_id_fkey"
+            foreignKeyName: "purchase_order_items_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "materials"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchase_orders_material_id_fkey"
+            foreignKeyName: "purchase_order_items_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "v_current_stock"
             referencedColumns: ["material_id"]
           },
           {
-            foreignKeyName: "purchase_orders_plant_id_fkey"
-            columns: ["plant_id"]
+            foreignKeyName: "purchase_order_items_po_id_fkey"
+            columns: ["po_id"]
             isOneToOne: false
-            referencedRelation: "plants"
+            referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          id: string
+          po_date: string
+          po_no: string
+          remarks: string | null
+          status: Database["public"]["Enums"]["po_status"]
+          supplier_id: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          id?: string
+          po_date?: string
+          po_no: string
+          remarks?: string | null
+          status?: Database["public"]["Enums"]["po_status"]
+          supplier_id: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          id?: string
+          po_date?: string
+          po_no?: string
+          remarks?: string | null
+          status?: Database["public"]["Enums"]["po_status"]
+          supplier_id?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "purchase_orders_plant_id_fkey"
-            columns: ["plant_id"]
+            foreignKeyName: "purchase_orders_department_id_fkey"
+            columns: ["department_id"]
             isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "purchase_orders_supplier_id_fkey"
@@ -1007,116 +742,32 @@ export type Database = {
           },
         ]
       }
-      scrap_entries: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          department_id: string
-          id: string
-          material_id: string
-          operator: string | null
-          operator_id: string | null
-          plant_id: string
-          quantity: number
-          reason: string | null
-          recovery_value: number
-          scrap_date: string
-          scrap_no: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          department_id: string
-          id?: string
-          material_id: string
-          operator?: string | null
-          operator_id?: string | null
-          plant_id: string
-          quantity: number
-          reason?: string | null
-          recovery_value?: number
-          scrap_date?: string
-          scrap_no?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          department_id?: string
-          id?: string
-          material_id?: string
-          operator?: string | null
-          operator_id?: string | null
-          plant_id?: string
-          quantity?: number
-          reason?: string | null
-          recovery_value?: number
-          scrap_date?: string
-          scrap_no?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrap_entries_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrap_entries_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "materials"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrap_entries_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["material_id"]
-          },
-          {
-            foreignKeyName: "scrap_entries_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "plants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrap_entries_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
-          },
-        ]
-      }
       supervisors: {
         Row: {
           created_at: string
-          department_id: string
+          department_id: string | null
           id: string
           name: string
           phone: string | null
-          status: Database["public"]["Enums"]["entity_status"]
+          status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          department_id: string
+          department_id?: string | null
           id?: string
           name: string
           phone?: string | null
-          status?: Database["public"]["Enums"]["entity_status"]
+          status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          department_id?: string
+          department_id?: string | null
           id?: string
           name?: string
           phone?: string | null
-          status?: Database["public"]["Enums"]["entity_status"]
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -1133,76 +784,43 @@ export type Database = {
         Row: {
           address: string | null
           code: string
-          contact: string | null
+          contact_name: string | null
           created_at: string
           email: string | null
           gstin: string | null
           id: string
           name: string
-          status: Database["public"]["Enums"]["entity_status"]
+          phone: string | null
+          status: string
           updated_at: string
         }
         Insert: {
           address?: string | null
           code: string
-          contact?: string | null
+          contact_name?: string | null
           created_at?: string
           email?: string | null
           gstin?: string | null
           id?: string
           name: string
-          status?: Database["public"]["Enums"]["entity_status"]
+          phone?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
           address?: string | null
           code?: string
-          contact?: string | null
+          contact_name?: string | null
           created_at?: string
           email?: string | null
           gstin?: string | null
           id?: string
           name?: string
-          status?: Database["public"]["Enums"]["entity_status"]
+          phone?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
-      }
-      user_plants: {
-        Row: {
-          created_at: string
-          id: string
-          plant_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          plant_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          plant_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_plants_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "plants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_plants_plant_id_fkey"
-            columns: ["plant_id"]
-            isOneToOne: false
-            referencedRelation: "v_current_stock"
-            referencedColumns: ["plant_id"]
-          },
-        ]
       }
       user_roles: {
         Row: {
@@ -1229,14 +847,13 @@ export type Database = {
     Views: {
       v_current_stock: {
         Row: {
+          code: string | null
           current_stock: number | null
-          is_low: boolean | null
-          material_code: string | null
           material_id: string | null
-          material_name: string | null
-          plant_code: string | null
-          plant_id: string | null
+          min_stock: number | null
+          name: string | null
           reorder_level: number | null
+          uom: Database["public"]["Enums"]["material_uom"] | null
         }
         Relationships: []
       }
@@ -1257,10 +874,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      user_can_access_plant: {
-        Args: { _plant_id: string; _user_id: string }
-        Returns: boolean
-      }
+      is_operator: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:
@@ -1274,8 +888,20 @@ export type Database = {
         | "quality_manager"
         | "auditor"
         | "viewer"
+        | "purchase"
+        | "store"
+        | "fabrication"
+        | "innovation_head"
       approval_status: "draft" | "pending" | "approved" | "rejected"
       entity_status: "active" | "inactive"
+      inventory_txn_type:
+        | "opening"
+        | "purchase"
+        | "fabrication"
+        | "adjustment"
+        | "return"
+      material_uom: "PCS" | "MTR" | "SET"
+      po_status: "open" | "partial" | "completed" | "cancelled"
       shift_type: "morning" | "afternoon" | "night" | "general" | "evening"
       txn_type:
         | "opening"
@@ -1426,9 +1052,22 @@ export const Constants = {
         "quality_manager",
         "auditor",
         "viewer",
+        "purchase",
+        "store",
+        "fabrication",
+        "innovation_head",
       ],
       approval_status: ["draft", "pending", "approved", "rejected"],
       entity_status: ["active", "inactive"],
+      inventory_txn_type: [
+        "opening",
+        "purchase",
+        "fabrication",
+        "adjustment",
+        "return",
+      ],
+      material_uom: ["PCS", "MTR", "SET"],
+      po_status: ["open", "partial", "completed", "cancelled"],
       shift_type: ["morning", "afternoon", "night", "general", "evening"],
       txn_type: [
         "opening",
