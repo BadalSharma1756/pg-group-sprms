@@ -2,8 +2,6 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-sidebar";
-import { ScopeProvider } from "@/lib/scope";
-import { ScopeSwitcher } from "@/components/scope-switcher";
 import { Loader2, Menu } from "lucide-react";
 import logo from "@/assets/pg-logo.png.asset.json";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -51,11 +49,7 @@ function ProtectedLayout() {
   }
   if (!session) return null;
 
-  return (
-    <ScopeProvider>
-      <LayoutInner />
-    </ScopeProvider>
-  );
+  return <LayoutInner />;
 }
 
 function LayoutInner() {
@@ -99,7 +93,6 @@ function LayoutInner() {
           </div>
         </div>
         <div className="flex-1" />
-        <ScopeSwitcher />
         <ThemeToggle />
         <UserMenu />
       </header>
