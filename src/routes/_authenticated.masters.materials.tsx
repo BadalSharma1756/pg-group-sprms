@@ -12,47 +12,45 @@ import { DataTable } from "@/components/data-table";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/format";
-import { MasterRowActions } from "@/components/master-row-actions";
 
 export const Route = createFileRoute("/_authenticated/masters/materials")({ component: Page });
 
 function Page() {
   const qc = useQueryClient();
-  const { data } = useQuery({ queryKey:["materials"], queryFn: async () => (await supabase.from("materials").select("*, pipe_sizes(code)").order("code")).data });
-  const { data: sizes } = useQuery({ queryKey:["pipe-sizes-lite"], queryFn: async () => (await supabase.from("pipe_sizes").select("id,code")).data });
+  const { data } = useQuery({ queryKey:["materials"], queryFn: async () => (await supabase.from("materials").select("*").order("code")).data });
   const [open,setOpen]=useState(false);
-  const [f,setF]=useState({ code:"", name:"", pipe_size_id:"", unit:"meter", reorder_level:0, allowed_wastage_pct:2 });
+  const [f,setF]=useState({ name:"", description:"", category:"", uom:"PCS" as "PCS"|"MTR"|"SET", min_stock:0, reorder_level:0 });
   const create=useMutation({
-    mutationFn: async () => { const { error } = await supabase.from("materials").insert(f); if (error) throw error; },
-    onSuccess: () => { toast.success("Saved"); setOpen(false); setF({ code:"",name:"",pipe_size_id:"",unit:"meter",reorder_level:0,allowed_wastage_pct:2 }); qc.invalidateQueries({queryKey:["materials"]}); },
+    mutationFn: async () => { const { error } = await supabase.from("materials").insert({ code:"", ...f }); if (error) throw error; },
+    onSuccess: () => { toast.success("Material saved — code auto-generated"); setOpen(false); setF({ name:"",description:"",category:"",uom:"PCS",min_stock:0,reorder_level:0 }); qc.invalidateQueries({queryKey:["materials"]}); },
     onError:(e:any)=>toast.error(e.message),
   });
   return (
     <>
-      <PageHeader title="Materials" subtitle="Raw materials (SS pipe stock-keeping units)"
+      <PageHeader title="Material Master" subtitle="All raw materials — code auto-generated (MAT-xxxxx)"
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="size-4 mr-1" />New material</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>New material</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Code</Label><Input value={f.code} onChange={(e)=>setF({...f, code:e.target.value.toUpperCase()})}/></div>
-                  <div><Label>Unit</Label><Input value={f.unit} onChange={(e)=>setF({...f, unit:e.target.value})}/></div>
-                </div>
                 <div><Label>Name</Label><Input value={f.name} onChange={(e)=>setF({...f, name:e.target.value})}/></div>
-                <div><Label>Pipe size</Label>
-                  <Select value={f.pipe_size_id} onValueChange={(v)=>setF({...f, pipe_size_id:v})}>
-                    <SelectTrigger><SelectValue placeholder="Select pipe size"/></SelectTrigger>
-                    <SelectContent>{(sizes ?? []).map((s:any)=> <SelectItem key={s.id} value={s.id}>{s.code}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div><Label>Description</Label><Input value={f.description} onChange={(e)=>setF({...f, description:e.target.value})}/></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Category</Label><Input value={f.category} onChange={(e)=>setF({...f, category:e.target.value})}/></div>
+                  <div><Label>UOM</Label>
+                    <Select value={f.uom} onValueChange={(v:any)=>setF({...f, uom:v})}>
+                      <SelectTrigger><SelectValue/></SelectTrigger>
+                      <SelectContent><SelectItem value="PCS">PCS</SelectItem><SelectItem value="MTR">MTR</SelectItem><SelectItem value="SET">SET</SelectItem></SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Reorder level</Label><Input type="number" value={f.reorder_level} onChange={(e)=>setF({...f, reorder_level:Number(e.target.value)})}/></div>
-                  <div><Label>Allowed wastage %</Label><Input type="number" step="0.01" value={f.allowed_wastage_pct} onChange={(e)=>setF({...f, allowed_wastage_pct:Number(e.target.value)})}/></div>
+                  <div><Label>Min stock</Label><Input type="number" step="0.001" value={f.min_stock} onChange={(e)=>setF({...f, min_stock:Number(e.target.value)})}/></div>
+                  <div><Label>Reorder level</Label><Input type="number" step="0.001" value={f.reorder_level} onChange={(e)=>setF({...f, reorder_level:Number(e.target.value)})}/></div>
                 </div>
               </div>
-              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.code || !f.name || create.isPending}>Save</Button></DialogFooter>
+              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.name || create.isPending}>Save</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         } />
@@ -60,17 +58,10 @@ function Page() {
         <DataTable rows={data ?? undefined} columns={[
           { header:"Code", cell:(r:any)=> <span className="font-mono text-xs">{r.code}</span> },
           { header:"Name", cell:(r:any)=> r.name },
-          { header:"Pipe size", cell:(r:any)=> r.pipe_sizes?.code ?? "—" },
-          { header:"Unit", cell:(r:any)=> r.unit },
+          { header:"Category", cell:(r:any)=> r.category ?? "—" },
+          { header:"UOM", cell:(r:any)=> r.uom },
+          { header:"Min stock", cell:(r:any)=> fmtNum(r.min_stock) },
           { header:"Reorder", cell:(r:any)=> fmtNum(r.reorder_level) },
-          { header:"Wastage %", cell:(r:any)=> fmtNum(r.allowed_wastage_pct) },
-          { header:"", className:"text-right w-32", cell:(r:any)=> <MasterRowActions table="materials" row={r} queryKey={["materials"]} label="material" fields={[
-            { name:"code", label:"Code", uppercase:true },
-            { name:"name", label:"Name" },
-            { name:"unit", label:"Unit" },
-            { name:"reorder_level", label:"Reorder level", type:"number" },
-            { name:"allowed_wastage_pct", label:"Allowed wastage %", type:"number", step:"0.01" },
-          ]} /> },
         ]} />
       </PageBody>
     </>

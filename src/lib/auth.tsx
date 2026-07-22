@@ -3,19 +3,19 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AppRole =
-  | "super_admin" | "plant_admin" | "production_manager" | "production_operator"
+  | "super_admin" | "plant_admin"
+  | "purchase" | "store" | "fabrication" | "innovation_head"
+  | "production_manager" | "production_operator"
   | "purchase_manager" | "purchase_executive" | "store_manager"
   | "quality_manager" | "auditor" | "viewer";
 
 /** First route a user with the given roles should land on after sign-in. */
 export function landingPathFor(roles: AppRole[]): string {
   const has = (r: AppRole) => roles.includes(r);
-  if (has("super_admin") || has("plant_admin")) return "/dashboard";
-  if (has("production_manager") || has("production_operator")) return "/production";
-  if (has("purchase_manager") || has("purchase_executive")) return "/purchase";
-  if (has("store_manager")) return "/inventory";
-  if (has("quality_manager")) return "/gap-verification";
-  if (has("auditor")) return "/audit";
+  if (has("super_admin") || has("plant_admin") || has("innovation_head")) return "/dashboard";
+  if (has("purchase") || has("purchase_manager") || has("purchase_executive")) return "/purchase";
+  if (has("store") || has("store_manager")) return "/inventory";
+  if (has("fabrication") || has("production_manager") || has("production_operator")) return "/fabrication";
   return "/dashboard";
 }
 
