@@ -2,15 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const ROLE_VALUES = [
+  "super_admin","plant_admin",
+  "purchase","store","fabrication","innovation_head",
+  "production_manager","production_operator",
+  "purchase_manager","purchase_executive","store_manager",
+  "quality_manager","auditor","viewer",
+] as const;
+
 const CreateInput = z.object({
   email: z.string().email(),
   full_name: z.string().optional(),
-  role: z.enum([
-    "super_admin","plant_admin","production_manager","production_operator",
-    "purchase_manager","purchase_executive","store_manager",
-    "quality_manager","auditor","viewer",
-  ]),
-  plant_ids: z.array(z.string().uuid()).default([]),
+  role: z.enum(ROLE_VALUES),
 });
 
 async function assertSuperAdmin(ctx: { supabase: any; userId: string }) {
@@ -43,21 +46,12 @@ export const createUser = createServerFn({ method: "POST" })
     await supabaseAdmin.from("user_roles").delete().eq("user_id", uid);
     const ins = await supabaseAdmin.from("user_roles").insert({ user_id: uid, role: data.role });
     if (ins.error) throw new Error(ins.error.message);
-    if (data.plant_ids.length) {
-      await supabaseAdmin.from("user_plants").insert(
-        data.plant_ids.map((p) => ({ user_id: uid, plant_id: p })),
-      );
-    }
     return { ok: true, user_id: uid };
   });
 
 const RoleInput = z.object({
   user_id: z.string().uuid(),
-  role: z.enum([
-    "super_admin","plant_admin","production_manager","production_operator",
-    "purchase_manager","purchase_executive","store_manager",
-    "quality_manager","auditor","viewer",
-  ]),
+  role: z.enum(ROLE_VALUES),
 });
 
 export const setUserRole = createServerFn({ method: "POST" })
@@ -69,27 +63,6 @@ export const setUserRole = createServerFn({ method: "POST" })
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user_id);
     const { error } = await supabaseAdmin.from("user_roles").insert({ user_id: data.user_id, role: data.role });
     if (error) throw new Error(error.message);
-    return { ok: true };
-  });
-
-const PlantsInput = z.object({
-  user_id: z.string().uuid(),
-  plant_ids: z.array(z.string().uuid()),
-});
-
-export const setUserPlants = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) => PlantsInput.parse(d))
-  .handler(async ({ context, data }) => {
-    await assertSuperAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("user_plants").delete().eq("user_id", data.user_id);
-    if (data.plant_ids.length) {
-      const { error } = await supabaseAdmin.from("user_plants").insert(
-        data.plant_ids.map((p) => ({ user_id: data.user_id, plant_id: p })),
-      );
-      if (error) throw new Error(error.message);
-    }
     return { ok: true };
   });
 
