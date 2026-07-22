@@ -9,118 +9,111 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { EntryListView } from "@/components/entry-list-view";
-import { Plus } from "lucide-react";
+import { DataTable } from "@/components/data-table";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { fmtNum, fmtDate } from "@/lib/format";
-import { ExportMenu } from "@/components/export-menu";
 
 export const Route = createFileRoute("/_authenticated/purchase")({ component: Page });
 
-async function ensureDirectSupplier() {
-  const { data: existing } = await supabase.from("suppliers").select("id").eq("code","DIRECT").maybeSingle();
-  if (existing?.id) return existing.id as string;
-  const { data, error } = await supabase.from("suppliers").insert({
-    code: "DIRECT", name: "Direct Purchase", status: "active",
-  }).select("id").single();
-  if (error) throw error;
-  return data.id as string;
-}
+type Line = { material_id: string; uom: "PCS"|"MTR"|"SET"; ordered_qty: number; rate: number };
 
 function Page() {
   const qc = useQueryClient();
+  const { data: pos } = useQuery({ queryKey:["pos"], queryFn: async () =>
+    (await supabase.from("purchase_orders").select("*, suppliers(code,name), purchase_order_items(id,ordered_qty,received_qty)").order("po_date",{ascending:false}).limit(200)).data });
+  const { data: suppliers } = useQuery({ queryKey:["po-sup"], queryFn: async () => (await supabase.from("suppliers").select("id,code,name").eq("status","active")).data });
+  const { data: departments } = useQuery({ queryKey:["po-dept"], queryFn: async () => (await supabase.from("departments").select("id,code,name").eq("status","active")).data });
+  const { data: materials } = useQuery({ queryKey:["po-mat"], queryFn: async () => (await supabase.from("materials").select("id,code,name,uom").eq("status","active")).data });
 
-  const { data } = useQuery({ queryKey:["purchase"], queryFn: async () =>
-    (await supabase.from("purchase_orders").select("*, materials(code,name,unit,pipe_sizes(size_label))").order("po_date",{ascending:false}).limit(200)).data });
-  const { data: materials } = useQuery({ queryKey:["mat-lite-po"], queryFn: async () => (await supabase.from("materials").select("id,code,name,unit,pipe_sizes(size_label)").eq("status","active").order("name")).data });
-  const { data: plants } = useQuery({ queryKey:["plants-lite-po"], queryFn: async () => (await supabase.from("plants").select("id,code,name").eq("status","active")).data });
+  const [open, setOpen] = useState(false);
+  const [supplier_id, setSupplier] = useState("");
+  const [department_id, setDept] = useState("");
+  const [remarks, setRemarks] = useState("");
+  const [lines, setLines] = useState<Line[]>([]);
 
-  const [open,setOpen]=useState(false);
-  const [f,setF]=useState({ po_date:new Date().toISOString().slice(0,10), material_id:"", quantity:0, remarks:"" });
+  const addLine = () => setLines([...lines, { material_id:"", uom:"PCS", ordered_qty:0, rate:0 }]);
+  const rmLine = (i:number) => setLines(lines.filter((_,j)=>j!==i));
+  const updLine = (i:number, patch: Partial<Line>) => setLines(lines.map((l,j)=> j===i ? {...l, ...patch} : l));
 
   const create = useMutation({
     mutationFn: async () => {
-      const plant_id = (plants ?? [])[0]?.id;
-      if (!plant_id) throw new Error("No plant configured");
-      const supplier_id = await ensureDirectSupplier();
-      const { error } = await supabase.from("purchase_orders").insert({
-        po_date: f.po_date, material_id: f.material_id, plant_id, supplier_id,
-        quantity: f.quantity, received_qty: f.quantity, rate: 0, gst_pct: 0, transport: 0,
-        remarks: f.remarks, status: "approved",
-      });
+      if (!supplier_id) throw new Error("Pick supplier");
+      if (!lines.length) throw new Error("Add at least one line");
+      const { data: po, error } = await supabase.from("purchase_orders").insert({
+        po_no: "", supplier_id, department_id: department_id || null, remarks,
+      }).select("id").single();
       if (error) throw error;
+      const items = lines.map(l => ({ po_id: po!.id, ...l }));
+      const { error: e2 } = await supabase.from("purchase_order_items").insert(items);
+      if (e2) throw e2;
     },
-    onSuccess: () => { toast.success("Purchase booked — stock updated"); setOpen(false);
-      setF({ po_date:new Date().toISOString().slice(0,10), material_id:"", quantity:0, remarks:"" });
-      qc.invalidateQueries({queryKey:["purchase"]});
-    },
-    onError:(e:any)=>toast.error(e.message),
+    onSuccess: () => { toast.success("Purchase order created"); setOpen(false); setSupplier(""); setDept(""); setRemarks(""); setLines([]); qc.invalidateQueries({queryKey:["pos"]}); },
+    onError: (e:any) => toast.error(e.message),
   });
-
-  const matLabel = (m:any) => {
-    const size = m?.pipe_sizes?.size_label;
-    return [m?.name, size, m?.unit].filter(Boolean).join(" · ");
-  };
 
   return (
     <>
-      <PageHeader title="Purchase" subtitle="Record incoming stock — increases inventory automatically"
+      <PageHeader title="Purchase Orders" subtitle="Multi-line orders; multiple invoices/receipts per PO"
         actions={
-          <div className="flex items-center gap-2">
-          <ExportMenu filename="purchase_orders" title="Purchase Orders"
-            rows={data ?? []}
-            columns={[
-              { header:"Date", accessor:(r:any)=>r.po_date },
-              { header:"Material", accessor:(r:any)=> r.materials ? `${r.materials.code} ${r.materials.name}` : "" },
-              { header:"Size", accessor:(r:any)=> r.materials?.pipe_sizes?.size_label ?? "" },
-              { header:"Unit", accessor:(r:any)=> r.materials?.unit ?? "" },
-              { header:"Qty", accessor:(r:any)=>r.quantity },
-              { header:"Remarks", accessor:(r:any)=>r.remarks ?? "" },
-            ]} />
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="size-4 mr-1"/>New purchase</Button></DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>New purchase entry</DialogTitle></DialogHeader>
+            <DialogTrigger asChild><Button><Plus className="size-4 mr-1"/>New PO</Button></DialogTrigger>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader><DialogTitle>New Purchase Order</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>Purchase Date</Label><Input type="date" value={f.po_date} onChange={(e)=>setF({...f, po_date:e.target.value})}/></div>
-                <div><Label>Material</Label>
-                  <Select value={f.material_id} onValueChange={(v)=>setF({...f, material_id:v})}>
-                    <SelectTrigger><SelectValue placeholder="Select material"/></SelectTrigger>
-                    <SelectContent>{(materials ?? []).map((m:any)=> <SelectItem key={m.id} value={m.id}>{matLabel(m)}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Supplier</Label>
+                    <Select value={supplier_id} onValueChange={setSupplier}>
+                      <SelectTrigger><SelectValue placeholder="Supplier"/></SelectTrigger>
+                      <SelectContent>{(suppliers ?? []).map((s:any)=> <SelectItem key={s.id} value={s.id}>{s.code} — {s.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Department</Label>
+                    <Select value={department_id} onValueChange={setDept}>
+                      <SelectTrigger><SelectValue placeholder="Department"/></SelectTrigger>
+                      <SelectContent>{(departments ?? []).map((d:any)=> <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div><Label>Quantity Purchased</Label><Input type="number" value={f.quantity} onChange={(e)=>setF({...f, quantity:Number(e.target.value)})}/></div>
-                <div><Label>Remarks</Label><Textarea rows={2} value={f.remarks} onChange={(e)=>setF({...f, remarks:e.target.value})}/></div>
+                <div><Label>Remarks</Label><Textarea rows={2} value={remarks} onChange={(e)=>setRemarks(e.target.value)}/></div>
+                <div className="rounded border">
+                  <div className="flex items-center justify-between p-2 border-b bg-muted/40 text-xs font-medium">Line items <Button size="sm" variant="ghost" onClick={addLine}><Plus className="size-3 mr-1"/>Add line</Button></div>
+                  <table className="w-full text-xs">
+                    <thead className="text-muted-foreground"><tr><th className="text-left p-2">Material</th><th className="p-2">UOM</th><th className="text-right p-2">Qty</th><th className="text-right p-2">Rate</th><th></th></tr></thead>
+                    <tbody>
+                      {lines.map((l,i)=>(
+                        <tr key={i} className="border-t">
+                          <td className="p-1">
+                            <Select value={l.material_id} onValueChange={(v)=>{ const m=(materials??[]).find((x:any)=>x.id===v); updLine(i,{ material_id:v, uom: m?.uom ?? "PCS" }); }}>
+                              <SelectTrigger className="h-8"><SelectValue placeholder="Material"/></SelectTrigger>
+                              <SelectContent>{(materials ?? []).map((m:any)=> <SelectItem key={m.id} value={m.id}>{m.code} — {m.name}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-1 text-center">{l.uom}</td>
+                          <td className="p-1"><Input className="h-8 text-right" type="number" step="0.001" value={l.ordered_qty} onChange={(e)=>updLine(i,{ ordered_qty:Number(e.target.value) })}/></td>
+                          <td className="p-1"><Input className="h-8 text-right" type="number" step="0.0001" value={l.rate} onChange={(e)=>updLine(i,{ rate:Number(e.target.value) })}/></td>
+                          <td className="p-1 text-right"><Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={()=>rmLine(i)}><Trash2 className="size-4"/></Button></td>
+                        </tr>
+                      ))}
+                      {lines.length===0 && <tr><td colSpan={5} className="text-center text-muted-foreground py-4">Add a line to get started</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <DialogFooter><Button onClick={()=>create.mutate()} disabled={!f.material_id || f.quantity<=0 || create.isPending}>Save</Button></DialogFooter>
+              <DialogFooter><Button onClick={()=>create.mutate()} disabled={create.isPending}>Save PO</Button></DialogFooter>
             </DialogContent>
           </Dialog>
-          </div>
         } />
       <PageBody>
-        <EntryListView
-          storageKey="entry-view"
-          tableName="purchase_orders"
-          searchPlaceholder="Search by material, remarks…"
-          detailTitle="Purchase entry"
-          rows={data ?? undefined}
-          columns={[
-            { header:"Date", cell:(r:any)=> fmtDate(r.po_date) },
-            { header:"Material", cell:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—" },
-            { header:"Size", cell:(r:any)=> r.materials?.pipe_sizes?.size_label ?? "—" },
-            { header:"Unit", cell:(r:any)=> r.materials?.unit ?? "—" },
-            { header:"Qty", cell:(r:any)=> fmtNum(r.quantity) },
-            { header:"Remarks", cell:(r:any)=> r.remarks ?? "—" },
-          ]}
-          details={[
-            { label:"Purchase date", value:(r:any)=> fmtDate(r.po_date) },
-            { label:"Material", value:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—", full:true },
-            { label:"Size", value:(r:any)=> r.materials?.pipe_sizes?.size_label ?? "—" },
-            { label:"Unit", value:(r:any)=> r.materials?.unit ?? "—" },
-            { label:"Quantity", value:(r:any)=> fmtNum(r.quantity) },
-            { label:"Remarks", value:(r:any)=> r.remarks || "—", full:true },
-          ]}
-        />
+        <DataTable rows={pos ?? undefined} columns={[
+          { header:"PO #", cell:(r:any)=> <span className="font-mono text-xs">{r.po_no}</span> },
+          { header:"Date", cell:(r:any)=> fmtDate(r.po_date) },
+          { header:"Supplier", cell:(r:any)=> r.suppliers ? `${r.suppliers.code} — ${r.suppliers.name}` : "—" },
+          { header:"Lines", cell:(r:any)=> r.purchase_order_items?.length ?? 0 },
+          { header:"Amount", cell:(r:any)=> "₹ " + fmtNum(r.total_amount, 2) },
+          { header:"Status", cell:(r:any)=> <Badge variant={r.status==="completed"?"default":r.status==="partial"?"secondary":"outline"}>{r.status}</Badge> },
+        ]} />
       </PageBody>
     </>
   );

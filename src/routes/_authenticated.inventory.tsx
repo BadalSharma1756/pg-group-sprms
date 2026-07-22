@@ -21,32 +21,28 @@ export const Route = createFileRoute("/_authenticated/inventory")({ component: P
 function Page() {
   const qc = useQueryClient();
   const { data: stock } = useQuery({ queryKey:["stock"], queryFn: async () =>
-    (await supabase.from("v_current_stock").select("*").order("material_code")).data });
+    (await supabase.from("v_current_stock").select("*").order("code")).data });
   const { data: txns } = useQuery({ queryKey:["txns"], queryFn: async () =>
-    (await supabase.from("inventory_transactions").select("*, materials(code,name), plants(code)").order("txn_date",{ascending:false}).limit(300)).data });
+    (await supabase.from("inventory_transactions").select("*, materials(code,name)").order("txn_date",{ascending:false}).limit(300)).data });
   const { data: materials } = useQuery({ queryKey:["mat-lite-inv"], queryFn: async () => (await supabase.from("materials").select("id,code,name")).data });
-  const { data: plants } = useQuery({ queryKey:["plants-lite-inv"], queryFn: async () => (await supabase.from("plants").select("id,code")).data });
 
   const [open, setOpen] = useState(false);
-  const [a, setA] = useState({ material_id: "", plant_id: "", direction: "in" as "in" | "out", quantity: 0, remarks: "" });
+  const [a, setA] = useState({ material_id: "", direction: "in" as "in" | "out", quantity: 0, remarks: "" });
   const adjust = useMutation({
     mutationFn: async () => {
-      const payload: any = {
-        txn_date: new Date().toISOString(),
+      const { error } = await supabase.from("inventory_transactions").insert({
         material_id: a.material_id,
-        plant_id: a.plant_id,
         txn_type: "adjustment",
         qty_in: a.direction === "in" ? a.quantity : 0,
         qty_out: a.direction === "out" ? a.quantity : 0,
         remarks: `Manual adjustment: ${a.remarks || "—"}`,
-      };
-      const { error } = await supabase.from("inventory_transactions").insert(payload);
+      });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Adjustment posted to ledger");
+      toast.success("Adjustment posted");
       setOpen(false);
-      setA({ material_id: "", plant_id: "", direction: "in", quantity: 0, remarks: "" });
+      setA({ material_id: "", direction: "in", quantity: 0, remarks: "" });
       qc.invalidateQueries({ queryKey: ["stock"] });
       qc.invalidateQueries({ queryKey: ["txns"] });
     },
@@ -62,19 +58,11 @@ function Page() {
             <DialogContent>
               <DialogHeader><DialogTitle>Inventory adjustment</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Plant</Label>
-                    <Select value={a.plant_id} onValueChange={(v)=>setA({...a, plant_id:v})}>
-                      <SelectTrigger><SelectValue placeholder="Plant"/></SelectTrigger>
-                      <SelectContent>{(plants ?? []).map((p:any)=> <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div><Label>Material</Label>
-                    <Select value={a.material_id} onValueChange={(v)=>setA({...a, material_id:v})}>
-                      <SelectTrigger><SelectValue placeholder="Material"/></SelectTrigger>
-                      <SelectContent>{(materials ?? []).map((m:any)=> <SelectItem key={m.id} value={m.id}>{m.code} — {m.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
+                <div><Label>Material</Label>
+                  <Select value={a.material_id} onValueChange={(v)=>setA({...a, material_id:v})}>
+                    <SelectTrigger><SelectValue placeholder="Material"/></SelectTrigger>
+                    <SelectContent>{(materials ?? []).map((m:any)=> <SelectItem key={m.id} value={m.id}>{m.code} — {m.name}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Direction</Label>
@@ -88,9 +76,9 @@ function Page() {
                   </div>
                   <div><Label>Quantity</Label><Input type="number" step="0.001" value={a.quantity} onChange={(e)=>setA({...a, quantity:Number(e.target.value)})}/></div>
                 </div>
-                <div><Label>Remarks / Reason</Label><Textarea value={a.remarks} onChange={(e)=>setA({...a, remarks:e.target.value})} placeholder="Stock-take correction, damaged, return, etc."/></div>
+                <div><Label>Reason</Label><Textarea value={a.remarks} onChange={(e)=>setA({...a, remarks:e.target.value})}/></div>
               </div>
-              <DialogFooter><Button onClick={()=>adjust.mutate()} disabled={!a.material_id || !a.plant_id || a.quantity<=0 || adjust.isPending}>Post adjustment</Button></DialogFooter>
+              <DialogFooter><Button onClick={()=>adjust.mutate()} disabled={!a.material_id || a.quantity<=0 || adjust.isPending}>Post</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         } />
@@ -98,23 +86,22 @@ function Page() {
         <Tabs defaultValue="stock">
           <TabsList><TabsTrigger value="stock">Current Stock</TabsTrigger><TabsTrigger value="ledger">Ledger</TabsTrigger></TabsList>
           <TabsContent value="stock" className="mt-4">
-            <DataTable rows={(stock ?? []).map((r:any,i:number)=>({ id:`${r.material_id}-${r.plant_id}-${i}`, ...r }))} columns={[
-              { header:"Material", cell:(r:any)=> `${r.material_code} — ${r.material_name}` },
-              { header:"Plant", cell:(r:any)=> r.plant_code },
+            <DataTable rows={(stock ?? []).map((r:any)=>({ id:r.material_id, ...r }))} columns={[
+              { header:"Code", cell:(r:any)=> <span className="font-mono text-xs">{r.code}</span> },
+              { header:"Material", cell:(r:any)=> r.name },
+              { header:"UOM", cell:(r:any)=> r.uom },
               { header:"Current stock", cell:(r:any)=> <span className={Number(r.current_stock)<=0?"text-destructive font-semibold":"font-semibold"}>{fmtNum(r.current_stock,3)}</span> },
               { header:"Reorder", cell:(r:any)=> fmtNum(r.reorder_level) },
-              { header:"Status", cell:(r:any)=> r.is_low ? <Badge variant="destructive">Low</Badge> : <Badge>OK</Badge> },
+              { header:"Status", cell:(r:any)=> Number(r.current_stock) <= Number(r.reorder_level) && Number(r.reorder_level)>0 ? <Badge variant="destructive">Low</Badge> : <Badge>OK</Badge> },
             ]} empty="No stock records yet" />
           </TabsContent>
           <TabsContent value="ledger" className="mt-4">
             <DataTable rows={txns ?? undefined} columns={[
               { header:"When", cell:(r:any)=> fmtDateTime(r.txn_date) },
-              { header:"Type", cell:(r:any)=> <Badge variant="outline" className="capitalize">{r.txn_type.replace("_"," ")}</Badge> },
+              { header:"Type", cell:(r:any)=> <Badge variant="outline" className="capitalize">{r.txn_type}</Badge> },
               { header:"Material", cell:(r:any)=> r.materials ? `${r.materials.code} — ${r.materials.name}` : "—" },
-              { header:"Plant", cell:(r:any)=> r.plants?.code ?? "—" },
               { header:"In", cell:(r:any)=> fmtNum(r.qty_in,3) },
               { header:"Out", cell:(r:any)=> fmtNum(r.qty_out,3) },
-              { header:"Ref", cell:(r:any)=> r.ref_table ?? "—" },
               { header:"Remarks", cell:(r:any)=> r.remarks ?? "" },
             ]} />
           </TabsContent>
